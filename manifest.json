@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Google 风格新标签页",
-  "version": "0.3.1",
-  "description": "为 Microsoft Edge 和 Google Chrome 提供简洁、可自定义的新标签页。",
+  "name": "微光新标签页 LumoraTab",
+  "version": "0.4.0",
+  "description": "简洁、快速、可自定义的新标签页，支持搜索、快捷方式、收藏夹与壁纸。",
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },

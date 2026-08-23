@@ -21,16 +21,17 @@ def main() -> None:
     artifacts: list[Path] = []
 
     for target, (browser, extensions_url) in TARGETS.items():
-        archive = DIST / f"custom-homepage-{target}-v{version}.zip"
-        install = f"""Custom Homepage v{version} for {browser}
+        archive = DIST / f"lumoratab-{target}-v{version}.zip"
+        install = f"""LumoraTab v{version} for {browser}
 
-安装方法：
+从浏览器扩展商店安装时无需手动操作。
+如需从 ZIP 测试：
 1. 解压此 ZIP。
 2. 打开 {extensions_url}
 3. 开启“开发者模式”。
-4. 点击“加载解压缩的扩展程序”，选择解压后的 custom-homepage 文件夹。
+4. 点击“加载解压缩的扩展程序”，选择能直接看到 manifest.json 的解压目录。
 
-这是个人自用的 Manifest V3 扩展，不需要上传应用商店。
+LumoraTab 是一个 Manifest V3 新标签页扩展。
 """
         with ZipFile(archive, "w", compression=ZIP_DEFLATED, compresslevel=9) as package:
             for filename in SOURCE_FILES:
