@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Google 风格新标签页",
+  "version": "0.3.0",
+  "description": "为 Microsoft Edge 和 Google Chrome 提供简洁、可自定义的新标签页。",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "permissions": [
+    "bookmarks",
+    "favicon",
+    "storage",
+    "topSites",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://suggestqueries.google.com/*",
+    "https://suggestion.baidu.com/*",
+    "https://api.bing.com/*",
+    "https://cn.bing.com/*",
+    "https://www.bing.com/*"
+  ]
+}
