@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Google 风格新标签页",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "为 Microsoft Edge 和 Google Chrome 提供简洁、可自定义的新标签页。",
   "chrome_url_overrides": {
     "newtab": "newtab.html"
