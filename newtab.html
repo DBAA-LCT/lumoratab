@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>新标签页</title>
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+  <main class="page-shell">
+    <div class="engine-picker">
+      <button id="search-engine-switch" class="engine-switch" type="button" aria-label="当前使用 Google 搜索，点击选择搜索引擎" aria-haspopup="menu" aria-expanded="false" aria-controls="search-engine-menu">
+        <span class="engine-logo google-logo" aria-hidden="true"><span class="blue">G</span><span class="red">o</span><span class="yellow">o</span><span class="blue">g</span><span class="green">l</span><span class="red">e</span></span>
+      </button>
+      <div id="search-engine-menu" class="engine-bloom" role="menu" aria-label="选择搜索引擎" hidden>
+        <button class="engine-petal engine-petal-google" type="button" role="menuitemradio" aria-checked="true" data-engine="google" aria-label="选择 Google">
+          <span class="petal-symbol google-petal-symbol" aria-hidden="true">G</span>
+          <span class="petal-label">Google</span>
+        </button>
+        <button class="engine-petal engine-petal-baidu" type="button" role="menuitemradio" aria-checked="false" data-engine="baidu" aria-label="选择百度">
+          <span class="petal-symbol baidu-petal-symbol" aria-hidden="true">百</span>
+          <span class="petal-label">百度</span>
+        </button>
+        <button class="engine-petal engine-petal-bing" type="button" role="menuitemradio" aria-checked="false" data-engine="bing" aria-label="选择 Microsoft Bing">
+          <span class="petal-symbol bing-petal-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="petal-label">Bing</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="search-area" class="search-area" data-engine="google">
+      <div id="search-box-row" class="search-box-row" data-engine="google">
+        <form id="search-form" class="search-form" role="search" aria-controls="search-suggestions" aria-expanded="false" data-engine="google">
+          <button id="search-leading-action" class="native-search-button search-leading-action" type="button" aria-label="更多搜索方式" aria-haspopup="menu" aria-expanded="false" data-action="add">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
+          </button>
+          <svg id="search-icon" class="search-icon" viewBox="0 0 24 24" aria-hidden="true" hidden>
+            <path d="m20.3 19-4.7-4.7a7 7 0 1 0-1.4 1.4l4.7 4.7a1 1 0 0 0 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/>
+          </svg>
+          <input id="search-input" type="text" autocomplete="off" spellcheck="false" aria-label="搜索 Google 或输入网址" aria-autocomplete="list" aria-controls="suggestion-list" placeholder="">
+          <div id="search-native-actions" class="search-native-actions" aria-label="Google 搜索工具"></div>
+          <button id="search-submit" class="native-submit-button" type="submit" hidden></button>
+        </form>
+        <button id="search-external-action" class="native-external-action" type="button" aria-label="打开 Microsoft Copilot" data-action="copilot" hidden>
+          <span class="copilot-mark" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div id="search-add-menu" class="search-add-menu" role="menu" aria-label="Google 更多搜索方式" hidden>
+        <button type="button" role="menuitem" data-action="visual">使用 Google Lens 搜图</button>
+        <button type="button" role="menuitem" data-action="ai">进入 Google AI 模式</button>
+      </div>
+      <section id="search-suggestions" class="search-suggestions" aria-label="搜索建议" hidden>
+        <div id="suggestion-list" class="suggestion-list" role="listbox"></div>
+        <p id="suggestion-status" class="visually-hidden" role="status"></p>
+      </section>
+    </div>
+
+    <section id="shortcuts" class="shortcuts" aria-label="快捷方式"></section>
+    <nav id="shortcut-pagination" class="shortcut-pagination" aria-label="快捷方式分页" hidden></nav>
+    <div id="shortcut-settings-menu" class="shortcut-settings-menu" role="menu" aria-label="快捷方式设置" hidden>
+      <button id="shortcut-edit-action" type="button" role="menuitem">编辑快捷方式</button>
+      <button id="shortcut-delete-action" class="danger-menu-action" type="button" role="menuitem">删除快捷方式</button>
+    </div>
+    <div id="group-item-settings-menu" class="shortcut-settings-menu" role="menu" aria-label="文件夹内快捷方式设置" hidden>
+      <button id="group-item-open-action" type="button" role="menuitem">在新标签页打开</button>
+      <button id="group-item-moveout-action" type="button" role="menuitem">移出文件夹</button>
+      <button id="group-item-delete-action" class="danger-menu-action" type="button" role="menuitem">删除</button>
+    </div>
+  </main>
+
+  <div class="page-actions">
+    <button id="next-wallpaper-button" class="page-action-button wallpaper-next-button" type="button" aria-label="切换到下一张必应壁纸" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 16.2 7.8L13 11h8V3l-3.35 3.35Z"/></svg>
+      <span>下一张</span>
+    </button>
+    <button id="customize-button" class="page-action-button customize-button" type="button" aria-label="打开设置">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.71 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58ZM12 15.6A3.61 3.61 0 0 1 8.4 12c0-1.98 1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6Z"/></svg>
+      <span>设置</span>
+    </button>
+  </div>
+
+  <dialog id="shortcut-dialog" class="dialog-card">
+    <form id="shortcut-form" method="dialog">
+      <div class="dialog-heading">
+        <h2 id="shortcut-dialog-title">添加快捷方式</h2>
+        <button class="icon-button close-button" type="button" data-close="shortcut-dialog" aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18.3 5.7-1-1L12 10l-5.3-5.3-1 1L11 11l-5.3 5.3 1 1L12 12l5.3 5.3 1-1L13 11l5.3-5.3Z"/></svg>
+        </button>
+      </div>
+      <button id="bookmark-picker-button" class="bookmark-picker-button" type="button" aria-expanded="false" aria-controls="bookmark-picker">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2Zm0 15.9-5-2.2-5 2.2V5h10v13.9Z"/></svg>
+        <span>从 Edge 收藏夹选择</span>
+      </button>
+      <section id="bookmark-picker" class="bookmark-picker" aria-label="Edge 收藏夹" hidden>
+        <label class="bookmark-search-label" for="bookmark-search">搜索收藏夹</label>
+        <div class="bookmark-search-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.3 19-4.7-4.7a7 7 0 1 0-1.4 1.4l4.7 4.7a1 1 0 0 0 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>
+          <input id="bookmark-search" type="search" autocomplete="off" placeholder="输入名称或网址">
+        </div>
+        <p id="bookmark-status" class="bookmark-status" role="status"></p>
+        <div id="bookmark-list" class="bookmark-list" role="listbox" aria-label="收藏夹网站"></div>
+      </section>
+      <label>名称<input id="shortcut-name" name="name" maxlength="32" required></label>
+      <label id="shortcut-url-label">网址<input id="shortcut-url" name="url" inputmode="url" placeholder="https://example.com" required></label>
+      <fieldset id="shortcut-icon-settings" class="shortcut-icon-settings">
+        <legend>图标</legend>
+        <div class="shortcut-icon-setting-row">
+          <select id="shortcut-icon-mode" aria-label="图标来源">
+            <option value="auto">自动（本地矢量或网站图标）</option>
+            <option value="url">图片网址</option>
+            <option value="file">上传本地图片</option>
+          </select>
+          <span id="shortcut-icon-preview" class="shortcut-icon shortcut-icon-preview" aria-label="图标预览">A</span>
+        </div>
+        <label id="shortcut-icon-url-label" hidden>图片网址
+          <input id="shortcut-icon-url" type="url" inputmode="url" placeholder="https://example.com/icon.svg">
+        </label>
+        <label id="shortcut-icon-file-label" hidden>本地图标
+          <input id="shortcut-icon-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+        </label>
+        <p class="shortcut-icon-hint">推荐 SVG、PNG 或 WebP；本地图片仅保存在此扩展中。</p>
+      </fieldset>
+      <label class="shortcut-destination-label">保存到
+        <span class="shortcut-destination-row">
+          <select id="shortcut-destination" name="destination" aria-label="快捷方式保存位置">
+            <option value="root">主页</option>
+          </select>
+          <button id="show-new-group" class="secondary-button compact-button" type="button">新建文件夹</button>
+        </span>
+      </label>
+      <div id="new-group-panel" class="new-group-panel" hidden>
+        <input id="new-group-name" type="text" maxlength="24" placeholder="输入文件夹名称" aria-label="文件夹名称">
+        <button id="create-group-button" class="primary-button compact-button" type="button">创建</button>
+      </div>
+      <p id="shortcut-error" class="form-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="secondary-button" type="button" data-close="shortcut-dialog">取消</button>
+        <button class="primary-button" type="submit">完成</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="shortcut-group-dialog" class="dialog-card shortcut-group-dialog">
+    <div class="group-dialog-content">
+      <div class="dialog-heading">
+        <h2 id="shortcut-group-title">文件夹</h2>
+        <button class="icon-button close-button" type="button" data-close="shortcut-group-dialog" aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18.3 5.7-1-1L12 10l-5.3-5.3-1 1L11 11l-5.3 5.3 1 1L12 12l5.3 5.3 1-1L13 11l5.3-5.3Z"/></svg>
+        </button>
+      </div>
+      <div id="shortcut-group-list" class="shortcut-group-list" aria-label="文件夹中的快捷方式"></div>
+      <button id="group-add-shortcut" class="bookmark-picker-button group-add-shortcut" type="button">添加到此文件夹</button>
+    </div>
+  </dialog>
+
+  <dialog id="customize-dialog" class="dialog-card customize-dialog">
+    <form id="customize-form" method="dialog">
+      <div class="dialog-heading">
+        <h2>设置</h2>
+        <button class="icon-button close-button" type="button" data-close="customize-dialog" aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18.3 5.7-1-1L12 10l-5.3-5.3-1 1L11 11l-5.3 5.3 1 1L12 12l5.3 5.3 1-1L13 11l5.3-5.3Z"/></svg>
+        </button>
+      </div>
+      <fieldset>
+        <legend>外观</legend>
+        <div class="engine-options">
+          <label><input type="radio" name="theme" value="light" checked><span>浅色</span></label>
+          <label><input type="radio" name="theme" value="dark"><span>深色</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>默认搜索引擎</legend>
+        <div class="engine-options">
+          <label><input type="radio" name="searchEngine" value="google"><span>Google</span></label>
+          <label><input type="radio" name="searchEngine" value="baidu"><span>百度</span></label>
+          <label><input type="radio" name="searchEngine" value="bing"><span>必应</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>壁纸</legend>
+        <div class="engine-options wallpaper-options">
+          <label><input type="radio" name="wallpaper" value="none" checked><span>无</span></label>
+          <label><input type="radio" name="wallpaper" value="bing"><span>必应壁纸</span></label>
+          <label><input type="radio" name="wallpaper" value="custom"><span>自定义图片</span></label>
+        </div>
+        <label id="wallpaper-rotate-label" class="wallpaper-rotate-label" hidden>轮换频率
+          <select id="wallpaper-rotate">
+            <option value="tab">每次打开新标签页</option>
+            <option value="hour">每小时</option>
+            <option value="day">每天</option>
+          </select>
+        </label>
+        <label id="wallpaper-file-label" class="wallpaper-file-label" hidden>选择图片
+          <input id="wallpaper-file" type="file" accept="image/png,image/jpeg,image/webp">
+        </label>
+        <p id="wallpaper-hint" class="wallpaper-hint" hidden>图片仅保存在此扩展中，不会上传。</p>
+      </fieldset>
+      <div class="dialog-actions">
+        <button id="reset-customization" class="secondary-button" type="button">恢复默认</button>
+        <button class="primary-button" type="submit">完成</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="newtab.js"></script>
+</body>
+</html>
