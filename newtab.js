@@ -82,6 +82,7 @@ const state = {
   searchEngine: 'google',
   searchHistory: [],
   shortcuts: [],
+  iconSourceCache: {},
   customization: {
     theme: 'light',
     wallpaper: { mode: 'none', image: '' }
@@ -703,7 +704,48 @@ function getShortcutHost(pageUrl) {
 }
 
 const ICON_SOURCE_TIMEOUT = 5000;
+const ICON_SOURCE_CACHE_LIMIT = 200;
 const resolvedIconCache = new Map();
+const pendingIconResolutions = new Map();
+let iconCacheWriteTimer;
+
+function isReusableIconUrl(url) {
+  if (typeof url !== 'string' || !url) return false;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'https:' || (parsed.protocol === 'data:' && url.startsWith('data:image/'))) return true;
+    return hasExtensionApi('runtime') && url.startsWith(chrome.runtime.getURL('/'));
+  } catch {
+    return false;
+  }
+}
+
+function hydrateResolvedIconCache(cache) {
+  resolvedIconCache.clear();
+  const entries = cache && typeof cache === 'object' ? Object.entries(cache) : [];
+  entries.slice(-ICON_SOURCE_CACHE_LIMIT).forEach(([host, url]) => {
+    if (host && isReusableIconUrl(url)) resolvedIconCache.set(host, url);
+  });
+  state.iconSourceCache = Object.fromEntries(resolvedIconCache);
+}
+
+function rememberResolvedIcon(host, url) {
+  if (!host || !isReusableIconUrl(url)) return;
+  resolvedIconCache.delete(host);
+  resolvedIconCache.set(host, url);
+  while (resolvedIconCache.size > ICON_SOURCE_CACHE_LIMIT) {
+    resolvedIconCache.delete(resolvedIconCache.keys().next().value);
+  }
+  state.iconSourceCache = Object.fromEntries(resolvedIconCache);
+  clearTimeout(iconCacheWriteTimer);
+  iconCacheWriteTimer = setTimeout(() => {
+    storageSet({ iconSourceCache: state.iconSourceCache }).catch(() => {});
+  }, 100);
+}
+
+function getCachedIconUrl(pageUrl) {
+  return resolvedIconCache.get(getShortcutHost(pageUrl)) || '';
+}
 
 function probeIconSource(url, minSize) {
   return new Promise((resolve, reject) => {
@@ -730,6 +772,8 @@ function probeIconSource(url, minSize) {
 function getIconSourceCandidates(pageUrl) {
   const host = getShortcutHost(pageUrl);
   const candidates = [];
+  const local = getFaviconUrl(pageUrl, 64);
+  if (local) candidates.push({ url: local, minSize: 16 });
   if (host) {
     candidates.push(
       { url: `https://logo.clearbit.com/${encodeURIComponent(host)}?size=128`, minSize: 64 },
@@ -738,23 +782,31 @@ function getIconSourceCandidates(pageUrl) {
       { url: `https://icons.duckduckgo.com/ip3/${encodeURIComponent(host)}.ico`, minSize: 16 }
     );
   }
-  const local = getFaviconUrl(pageUrl, 64);
-  if (local) candidates.push({ url: local, minSize: 32 });
   return candidates;
 }
 
-async function resolveIconUrl(pageUrl) {
+function resolveIconUrl(pageUrl) {
   const host = getShortcutHost(pageUrl);
-  if (host && resolvedIconCache.has(host)) return resolvedIconCache.get(host);
-  for (const candidate of getIconSourceCandidates(pageUrl)) {
-    try {
-      const resolved = await probeIconSource(candidate.url, candidate.minSize);
-      if (host) resolvedIconCache.set(host, resolved);
-      return resolved;
-    } catch {}
+  const cached = host ? resolvedIconCache.get(host) : '';
+  if (cached) return Promise.resolve(cached);
+  if (host && pendingIconResolutions.has(host)) return pendingIconResolutions.get(host);
+
+  const request = (async () => {
+    for (const candidate of getIconSourceCandidates(pageUrl)) {
+      try {
+        const resolved = await probeIconSource(candidate.url, candidate.minSize);
+        rememberResolvedIcon(host, resolved);
+        return resolved;
+      } catch {}
+    }
+    return '';
+  })();
+
+  if (host) {
+    pendingIconResolutions.set(host, request);
+    request.finally(() => pendingIconResolutions.delete(host));
   }
-  if (host) resolvedIconCache.set(host, '');
-  return '';
+  return request;
 }
 
 function getShortcutIconSource(shortcut) {
@@ -766,10 +818,20 @@ function getShortcutIconSource(shortcut) {
 
 function attachIconImage(icon, url) {
   const image = document.createElement('img');
-  image.src = url;
   image.alt = '';
   image.decoding = 'async';
   image.addEventListener('load', () => icon.replaceChildren(image), { once: true });
+  image.src = url;
+}
+
+function attachResolvedFavicon(icon, pageUrl) {
+  const cached = getCachedIconUrl(pageUrl);
+  const immediate = cached || getFaviconUrl(pageUrl, 64);
+  if (immediate) attachIconImage(icon, immediate);
+  if (cached) return;
+  resolveIconUrl(pageUrl).then((resolved) => {
+    if (resolved && resolved !== immediate) attachIconImage(icon, resolved);
+  });
 }
 
 function createShortcutIcon(shortcut, className = 'shortcut-icon') {
@@ -778,15 +840,8 @@ function createShortcutIcon(shortcut, className = 'shortcut-icon') {
   icon.textContent = shortcut.name.trim().charAt(0).toUpperCase() || '?';
 
   const source = getShortcutIconSource(shortcut);
-  if (source.url) {
-    attachIconImage(icon, source.url);
-    return icon;
-  }
-  if (source.type === 'favicon') {
-    resolveIconUrl(shortcut.url).then((resolved) => {
-      if (resolved) attachIconImage(icon, resolved);
-    });
-  }
+  if (source.url) attachIconImage(icon, source.url);
+  else if (source.type === 'favicon') attachResolvedFavicon(icon, shortcut.url);
   return icon;
 }
 
@@ -813,11 +868,7 @@ function renderShortcutIconPreview() {
     attachIconImage(preview, source.url);
     return;
   }
-  if (source.type === 'favicon') {
-    resolveIconUrl(shortcut.url).then((resolved) => {
-      if (resolved) attachIconImage(preview, resolved);
-    });
-  }
+  if (source.type === 'favicon') attachResolvedFavicon(preview, shortcut.url);
 }
 
 function updateShortcutIconFields() {
@@ -1703,11 +1754,12 @@ function normalizeShortcutEntry(item) {
 }
 
 async function initialize() {
-  const stored = await storageGet(['searchEngine', 'searchHistory', 'shortcuts', 'customization']);
+  const stored = await storageGet(['searchEngine', 'searchHistory', 'shortcuts', 'customization', 'iconSourceCache']);
   state.searchEngine = SEARCH_ENGINES[stored.searchEngine] ? stored.searchEngine : 'google';
   state.searchHistory = Array.isArray(stored.searchHistory) ? stored.searchHistory
     .filter((item) => typeof item?.query === 'string' && SEARCH_ENGINES[item.engine])
     .slice(0, 10) : [];
+  hydrateResolvedIconCache(stored.iconSourceCache);
   const shortcutSource = Array.isArray(stored.shortcuts) ? stored.shortcuts : await loadTopSites();
   state.shortcuts = shortcutSource.map(normalizeShortcutEntry).filter(Boolean);
   state.customization = {
