@@ -1,0 +1,52 @@
+name: Build release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Restore CRX signing key
+        shell: bash
+        env:
+          CRX_PRIVATE_KEY_B64: ${{ secrets.CRX_PRIVATE_KEY_B64 }}
+        run: |
+          if [[ -z "$CRX_PRIVATE_KEY_B64" ]]; then
+            echo "CRX_PRIVATE_KEY_B64 secret is missing" >&2
+            exit 1
+          fi
+          printf '%s' "$CRX_PRIVATE_KEY_B64" | base64 --decode > "$RUNNER_TEMP/lumoratab.pem"
+          chmod 600 "$RUNNER_TEMP/lumoratab.pem"
+
+      - name: Build ZIP and signed CRX packages
+        run: python build-release.py --crx-key "$RUNNER_TEMP/lumoratab.pem" --require-crx
+
+      - name: Publish release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(python -c "import json; print(json.load(open('manifest.json', encoding='utf-8'))['version'])")"
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$tag" != "v$version" ]]; then
+            echo "Tag $tag does not match manifest version v$version" >&2
+            exit 1
+          fi
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --title "Custom Homepage $tag" --generate-notes
+          fi
+          gh release upload "$tag" \
+            "dist/custom-homepage-chrome-v$version.zip#Chrome unpacked package" \
+            "dist/custom-homepage-edge-v$version.zip#Edge unpacked package" \
+            "dist/custom-homepage-v$version.crx#Signed CRX3 package" \
+            "dist/SHA256SUMS.txt#SHA256 checksums" \
+            --clobber

@@ -22,19 +22,20 @@ Chromium 源码是开源的，但浏览器内置新标签页不是一个可单�
 
 ## 安装生产版本
 
-从 GitHub Releases 下载对应安装包并解压：
+GitHub Releases 提供以下安装包：
 
-- Edge：`custom-homepage-edge-v<版本>.zip`
-- Chrome：`custom-homepage-chrome-v<版本>.zip`
+- 签名包：`custom-homepage-v<版本>.crx`
+- Edge 解压包：`custom-homepage-edge-v<版本>.zip`
+- Chrome 解压包：`custom-homepage-chrome-v<版本>.zip`
 
-然后：
+Windows 和 macOS 上的 Chrome/Edge 通常不允许普通用户直接安装非商店来源的 CRX。遇到限制时请下载对应 ZIP，然后：
 
 1. Edge 打开 `edge://extensions/`；Chrome 打开 `chrome://extensions/`。
 2. 开启“开发者模式”。
 3. 点击“加载解压缩的扩展程序”。
 4. 选择解压后的 `custom-homepage` 文件夹。
 
-浏览器通常不允许直接安装非商店来源的 CRX，因此个人使用采用 ZIP +“加载解压缩”方式。
+CRX 适合发布、企业策略部署和保留稳定的扩展 ID；ZIP 用于个人开发者模式安装。
 
 ## 从源码加载
 
@@ -54,7 +55,17 @@ Chromium 源码是开源的，但浏览器内置新标签页不是一个可单�
 .\build-release.ps1
 ```
 
-脚本会在 `dist` 目录生成 Edge、Chrome 两个 ZIP 和 `SHA256SUMS.txt`。
+默认情况下，脚本会在 `dist` 目录生成 Edge、Chrome 两个 ZIP 和 `SHA256SUMS.txt`。
+
+使用固定 PEM 私钥还可以同时生成签名 CRX：
+
+```powershell
+python .\build-release.py --crx-key C:\安全目录\lumoratab.pem --require-crx
+```
+
+首次私钥可通过 Chrome 的“打包扩展程序”功能生成。必须安全保存并在所有后续版本中复用同一私钥，否则扩展 ID 会改变。不要把 `.pem` 提交到 Git。
+
+推送与 `manifest.json` 版本一致的 `v*` 标签后，GitHub Actions 会自动构建并上传 ZIP、CRX 和校验文件。仓库需要配置 Base64 编码的 `CRX_PRIVATE_KEY_B64` Actions Secret。
 
 ## 文件结构
 
