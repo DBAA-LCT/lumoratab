@@ -1,10 +1,8 @@
-# Google 风格新标签页（Edge / Chrome）
+# 微光新标签页 LumoraTab（Edge / Chrome）
 
-一个无框架、无构建依赖的 Manifest V3 新标签页扩展，支持 Microsoft Edge 和 Google Chrome，视觉与交互参考现代浏览器新标签页。
+LumoraTab 是一个无框架、无构建依赖的 Manifest V3 新标签页扩展，为 Microsoft Edge 和 Google Chrome 提供简洁、快速、可自定义的起始页面。
 
-## 为什么没有直接拉取 Google 的新标签页代码
-
-Chromium 源码是开源的，但浏览器内置新标签页不是一个可单独安装的扩展。它依赖 Chromium 内部的 WebUI、C++/Mojo 接口和浏览器服务；Google Chrome 版本还包含品牌与在线服务部分。因此，本项目采用独立实现，而不是复制庞大的 Chromium 源码或引入来源不明的第三方项目。
+项目采用独立实现，不包含或复制浏览器厂商的专有新标签页代码，也不代表 Google、Microsoft、Bing 或其他第三方官方产品。
 
 ## 当前功能
 
@@ -24,15 +22,15 @@ Chromium 源码是开源的，但浏览器内置新标签页不是一个可单�
 
 从 GitHub Releases 下载对应安装包并解压：
 
-- Edge：`custom-homepage-edge-v<版本>.zip`
-- Chrome：`custom-homepage-chrome-v<版本>.zip`
+- Edge：`lumoratab-edge-v<版本>.zip`
+- Chrome：`lumoratab-chrome-v<版本>.zip`
 
 然后：
 
 1. Edge 打开 `edge://extensions/`；Chrome 打开 `chrome://extensions/`。
 2. 开启“开发者模式”。
 3. 点击“加载解压缩的扩展程序”。
-4. 选择解压后的 `custom-homepage` 文件夹。
+4. 选择解压后的 `lumoratab` 文件夹。
 
 浏览器通常不允许直接安装非商店来源的 CRX，因此个人使用采用 ZIP +“加载解压缩”方式。
 
@@ -63,6 +61,7 @@ Chromium 源码是开源的，但浏览器内置新标签页不是一个可单�
 - `newtab.css`：界面和响应式布局
 - `newtab.js`：搜索、快捷方式、主题和壁纸逻辑
 - `build-release.ps1`：生产包构建脚本
+- `store/`：双语商店文案、隐私政策、权限说明和发布检查清单
 - `dist/`：生成的浏览器安装包
 
 ## 发布注意

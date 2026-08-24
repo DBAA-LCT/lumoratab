@@ -1,0 +1,2 @@
+2e77e9441c2271ed76ff51d5c0f8d5f50c63038f1b3003a06fcf6c278675e4f1  custom-homepage-edge-v0.3.1.zip
+a26265a1f415ece8fd6dd424a142737ea8ccf52171319986429b6fdbc24d58cb  custom-homepage-chrome-v0.3.1.zip
