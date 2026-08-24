@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "微光新标签页 LumoraTab",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "简洁、快速、可自定义的新标签页，支持搜索、AI 提问转发、快捷方式、收藏夹与壁纸。",
   "icons": {
     "16": "icons/icon-16.png",

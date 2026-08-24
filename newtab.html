@@ -301,6 +301,17 @@
         </label>
         <p id="wallpaper-hint" class="wallpaper-hint" hidden>图片仅保存在此扩展中，不会上传。</p>
       </fieldset>
+      <fieldset class="privacy-settings">
+        <legend>隐私与数据</legend>
+        <p class="privacy-intro">LumoraTab 不运营数据收集服务器，也不包含广告、分析或用户跟踪。</p>
+        <ul class="privacy-data-list">
+          <li><span class="privacy-data-badge local">本地</span><span>快捷方式、收藏夹选择、常用网站、设置和搜索历史仅在浏览器中处理与保存。</span></li>
+          <li><span class="privacy-data-badge direct">直连</span><span>搜索文字只发送给当前选择的搜索引擎，用于搜索或获取联想。</span></li>
+          <li><span class="privacy-data-badge direct">直连</span><span>AI 问题只转发给用户选择的豆包或 DeepSeek，不写入 LumoraTab 历史。</span></li>
+          <li><span class="privacy-data-badge optional">可选</span><span>必应壁纸和网站图标会按需请求对应的第三方服务。</span></li>
+        </ul>
+        <a class="privacy-policy-link" href="https://github.com/DBAA-LCT/lumoratab/blob/main/store/privacy-policy.md" target="_blank" rel="noreferrer">查看完整隐私政策<span aria-hidden="true">↗</span></a>
+      </fieldset>
       <div class="dialog-actions">
         <button id="reset-customization" class="secondary-button" type="button">恢复默认</button>
         <button class="primary-button" type="submit">完成</button>

@@ -931,6 +931,8 @@ body.has-wallpaper .shortcut-title {
 }
 .dialog-card::backdrop { background: rgba(32, 33, 36, .32); }
 .dialog-card form { padding: 24px; }
+.customize-dialog { max-height: 92vh; }
+.customize-dialog form { max-height: 92vh; overflow-y: auto; overscroll-behavior: contain; }
 .dialog-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
 .dialog-heading h2 { margin: 0; font-size: 20px; font-weight: 500; }
 .close-button { margin: -8px; }
@@ -1148,6 +1150,19 @@ legend { margin-bottom: 12px; font-size: 14px; font-weight: 600; }
 .engine-options label { display: inline-flex; align-items: center; gap: 7px; margin: 0; padding: 7px 14px; border: 1px solid var(--border); border-radius: 18px; color: var(--text); font-size: 14px; cursor: pointer; }
 .engine-options label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 .engine-options input { accent-color: var(--accent); margin: 0; }
+.privacy-settings { margin-bottom: 20px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--page-bg); }
+.privacy-settings legend { margin: 0; padding: 0 4px; color: var(--text); }
+.privacy-intro { margin: 0 0 13px; color: var(--text); font-size: 13px; line-height: 1.6; }
+.privacy-data-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.privacy-data-list li { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: start; gap: 9px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.privacy-data-badge { min-width: 42px; padding: 2px 5px; border-radius: 999px; text-align: center; font-size: 10px; font-weight: 700; line-height: 18px; }
+.privacy-data-badge.local { background: color-mix(in srgb, #188038 14%, transparent); color: #137333; }
+.privacy-data-badge.direct { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.privacy-data-badge.optional { background: color-mix(in srgb, #f9ab00 18%, transparent); color: #8a5a00; }
+:root[data-theme="dark"] .privacy-data-badge.local { color: #81c995; }
+:root[data-theme="dark"] .privacy-data-badge.optional { color: #fdd663; }
+.privacy-policy-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 14px; color: var(--accent); font-size: 12px; font-weight: 600; text-decoration: none; }
+.privacy-policy-link:hover { text-decoration: underline; }
 
 @media (max-width: 620px) {
   .page-shell { padding-inline: 16px; }

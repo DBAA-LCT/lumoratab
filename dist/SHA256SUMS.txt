@@ -1,3 +1,3 @@
-d96a1a1114d463d7036f52e517ab6edeefbfba4e466248d90c4d30bef52450b4  lumoratab-edge-v0.4.0.zip
-2807e5ba83fa0e7c15bbaa156622bdc80cccb88367dd4539edb8f4bc7caee32e  lumoratab-chrome-v0.4.0.zip
-44de6eeff8f2008f0e6e474b5fe422a4536779a3e4c87344971c80ddad299adc  lumoratab-store-v0.4.0.zip
+3b14541c5c4eb3da5939bd5ba8a4f99080743393259b175279f00803590a410e  lumoratab-edge-v0.4.1.zip
+4d1600d05eac309a0c12b88536d69d30c0976c05579a19d5a812b1cfce444a96  lumoratab-chrome-v0.4.1.zip
+bcddcd75fc9fabab5d9e18da487162d0e857f74b2e46343d43a8b822c5d6a087  lumoratab-store-v0.4.1.zip
