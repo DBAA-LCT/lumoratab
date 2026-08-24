@@ -14,6 +14,13 @@ from zipfile import ZIP_DEFLATED, ZipFile
 ROOT = Path(__file__).resolve().parent
 DIST = ROOT / "dist"
 SOURCE_FILES = ("manifest.json", "newtab.html", "newtab.css", "newtab.js")
+ICON_FILES = (
+    "icons/icon-16.png",
+    "icons/icon-32.png",
+    "icons/icon-48.png",
+    "icons/icon-128.png",
+)
+PACKAGE_FILES = SOURCE_FILES + ICON_FILES
 TARGETS = {
     "edge": ("Microsoft Edge", "edge://extensions/"),
     "chrome": ("Google Chrome", "chrome://extensions/"),
@@ -45,8 +52,10 @@ def build_crx(version: str, key: Path) -> Path:
     with tempfile.TemporaryDirectory(prefix="lumoratab-crx-") as temp_dir:
         extension_dir = Path(temp_dir) / "lumoratab"
         extension_dir.mkdir()
-        for filename in SOURCE_FILES:
-            shutil.copy2(ROOT / filename, extension_dir / filename)
+        for filename in PACKAGE_FILES:
+            destination = extension_dir / filename
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / filename, destination)
 
         subprocess.run(
             [
@@ -101,10 +110,16 @@ def main() -> None:
 LumoraTab 是一个 Manifest V3 新标签页扩展。
 """
         with ZipFile(archive, "w", compression=ZIP_DEFLATED, compresslevel=9) as package:
-            for filename in SOURCE_FILES:
+            for filename in PACKAGE_FILES:
                 package.write(ROOT / filename, filename)
             package.writestr("INSTALL.txt", install.encode("utf-8-sig"))
         artifacts.append(archive)
+
+    store_archive = DIST / f"lumoratab-store-v{version}.zip"
+    with ZipFile(store_archive, "w", compression=ZIP_DEFLATED, compresslevel=9) as package:
+        for filename in PACKAGE_FILES:
+            package.write(ROOT / filename, filename)
+    artifacts.append(store_archive)
 
     if args.crx_key:
         artifacts.append(build_crx(version, args.crx_key))

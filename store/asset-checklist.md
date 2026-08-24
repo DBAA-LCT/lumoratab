@@ -2,17 +2,17 @@
 
 ## Required code-package assets
 
-- [ ] Final logo selected.
-- [ ] PNG extension icons exported at 16×16, 32×32, 48×48, and 128×128.
-- [ ] `manifest.json` contains the `icons` map.
-- [ ] Store ZIP has `manifest.json` at archive root.
-- [ ] ZIP contains only runtime files and extension icons; no source-control or store-document files.
-- [ ] JavaScript syntax, ZIP contents, version, and SHA256 validated.
+- [x] Final logo selected.
+- [x] PNG extension icons exported at 16×16, 32×32, 48×48, and 128×128.
+- [x] `manifest.json` contains the `icons` map.
+- [x] Store ZIP has `manifest.json` at archive root.
+- [x] ZIP contains only runtime files and extension icons; no source-control or store-document files.
+- [x] JavaScript syntax, ZIP contents, version, and SHA256 validated.
 
 ## Microsoft Edge Add-ons
 
-- [ ] Individual or company account enrolled in the Microsoft Edge program.
-- [ ] Extension logo: square, recommended 300×300 PNG; minimum 128×128.
+- [x] Individual or company account enrolled in the Microsoft Edge program.
+- [x] Extension logo: square, recommended 300×300 PNG; minimum 128×128.
 - [ ] Full description: 250–10,000 characters.
 - [ ] At least 3 screenshots recommended; allowed sizes are 1280×800 or 640×480, maximum 6.
 - [ ] Optional small promotional tile: 440×280 PNG.

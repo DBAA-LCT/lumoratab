@@ -53,6 +53,7 @@ jobs:
           gh release upload "$tag" \
             "dist/lumoratab-chrome-v$version.zip#Chrome unpacked package" \
             "dist/lumoratab-edge-v$version.zip#Edge unpacked package" \
+            "dist/lumoratab-store-v$version.zip#Browser store submission package" \
             "dist/lumoratab-v$version.crx#Signed CRX3 package" \
             "dist/SHA256SUMS.txt#SHA256 checksums" \
             --clobber
