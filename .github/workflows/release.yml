@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to update
+        required: true
 
 permissions:
   contents: write
@@ -34,9 +39,10 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           version="$(python -c "import json; print(json.load(open('manifest.json', encoding='utf-8'))['version'])")"
-          tag="${GITHUB_REF_NAME}"
+          tag="$RELEASE_TAG"
           if [[ "$tag" != "v$version" ]]; then
             echo "Tag $tag does not match manifest version v$version" >&2
             exit 1
