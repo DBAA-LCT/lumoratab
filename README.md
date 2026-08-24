@@ -1,16 +1,20 @@
 <div align="center">
 
-# 微光新标签页 LumoraTab
+<img src="store/assets/lumoratab-icon-300.png" width="96" alt="LumoraTab 图标">
 
-一个简洁、快速、可自定义的 Chrome / Edge 新标签页扩展。
-[![Release](https://img.shields.io/github/v/release/DBAA-LCT/lumoratab?display_name=tag&style=flat-square)](https://github.com/DBAA-LCT/lumoratab/releases/latest)
-[![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)](manifest.json)
-[![Chrome](https://img.shields.io/badge/Chrome-supported-34A853?style=flat-square&logo=googlechrome&logoColor=white)](#安装)
-[![Edge](https://img.shields.io/badge/Edge-supported-0078D7?style=flat-square&logo=microsoftedge&logoColor=white)](#安装)
+<h1>微光新标签页 LumoraTab</h1>
 
-![LumoraTab 浅色主页](docs/screenshots/home-light.png)
+<p>一个简洁、快速、可自定义的 Chrome / Edge 新标签页扩展。</p>
 
-<img width="3828" height="1872" alt="PixPin_2026-08-24_11-46-00" src="https://github.com/user-attachments/assets/b41f130c-d206-4fc4-87f8-a9f2f6b6245f" />
+<p>
+  <a href="https://github.com/DBAA-LCT/lumoratab/releases/latest"><img src="https://img.shields.io/github/v/release/DBAA-LCT/lumoratab?display_name=tag&amp;style=flat-square" alt="Release"></a>
+  <a href="manifest.json"><img src="https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&amp;logo=googlechrome&amp;logoColor=white" alt="Manifest V3"></a>
+  <a href="#安装"><img src="https://img.shields.io/badge/Chrome-supported-34A853?style=flat-square&amp;logo=googlechrome&amp;logoColor=white" alt="Chrome supported"></a>
+  <a href="#安装"><img src="https://img.shields.io/badge/Edge-supported-0078D7?style=flat-square&amp;logo=microsoftedge&amp;logoColor=white" alt="Edge supported"></a>
+</p>
+
+<img src="docs/screenshots/home-light.png" width="100%" alt="LumoraTab v0.4.0 浅色主页">
+
 </div>
 
 ## 亮点
@@ -25,9 +29,11 @@
 
 ## 界面预览
 
-| 深色主题 | 设置面板 |
+以下截图均由当前 `v0.4.0` 代码在干净浏览器配置中生成。
+
+| 快捷方式资源库 | 设置面板 |
 | --- | --- |
-| ![LumoraTab 深色主题](docs/screenshots/home-dark.png) | ![LumoraTab 设置面板](docs/screenshots/settings.png) |
+| ![LumoraTab 快捷方式资源库](docs/screenshots/resource-library.png) | ![LumoraTab 设置面板](docs/screenshots/settings.png) |
 
 ## 安装
 
