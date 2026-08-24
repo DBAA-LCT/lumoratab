@@ -3,7 +3,7 @@
 # 微光新标签页 LumoraTab
 
 一个简洁、快速、可自定义的 Chrome / Edge 新标签页扩展。
-
+<img width="3828" height="1872" alt="PixPin_2026-08-24_11-46-00" src="https://github.com/user-attachments/assets/b41f130c-d206-4fc4-87f8-a9f2f6b6245f" />
 [![Release](https://img.shields.io/github/v/release/DBAA-LCT/lumoratab?display_name=tag&style=flat-square)](https://github.com/DBAA-LCT/lumoratab/releases/latest)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)](manifest.json)
 [![Chrome](https://img.shields.io/badge/Chrome-supported-34A853?style=flat-square&logo=googlechrome&logoColor=white)](#安装)
