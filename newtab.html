@@ -26,6 +26,22 @@
           <span class="petal-symbol bing-petal-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
           <span class="petal-label">Bing</span>
         </button>
+        <button class="engine-petal engine-petal-sogou" type="button" role="menuitemradio" aria-checked="false" data-engine="sogou" aria-label="选择搜狗">
+          <span class="petal-symbol sogou-petal-symbol" aria-hidden="true">S</span>
+          <span class="petal-label">搜狗</span>
+        </button>
+        <button class="engine-petal engine-petal-so360" type="button" role="menuitemradio" aria-checked="false" data-engine="so360" aria-label="选择 360 搜索">
+          <span class="petal-symbol so360-petal-symbol" aria-hidden="true">360</span>
+          <span class="petal-label">360</span>
+        </button>
+        <button class="engine-petal engine-petal-doubao" type="button" role="menuitemradio" aria-checked="false" data-engine="doubao" aria-label="选择豆包">
+          <img class="petal-image-symbol" src="icons/sites/doubao.com.png" alt="" aria-hidden="true">
+          <span class="petal-label">豆包</span>
+        </button>
+        <button class="engine-petal engine-petal-deepseek" type="button" role="menuitemradio" aria-checked="false" data-engine="deepseek" aria-label="选择 DeepSeek">
+          <img class="petal-image-symbol" src="icons/sites/chat.deepseek.com.png" alt="" aria-hidden="true">
+          <span class="petal-label">DeepSeek</span>
+        </button>
       </div>
     </div>
 
@@ -60,6 +76,8 @@
     <nav id="shortcut-pagination" class="shortcut-pagination" aria-label="快捷方式分页" hidden></nav>
     <div id="shortcut-settings-menu" class="shortcut-settings-menu" role="menu" aria-label="快捷方式设置" hidden>
       <button id="shortcut-edit-action" type="button" role="menuitem">编辑快捷方式</button>
+      <button id="shortcut-move-prev-action" type="button" role="menuitem">移到上一页</button>
+      <button id="shortcut-move-next-action" type="button" role="menuitem">移到下一页</button>
       <button id="shortcut-delete-action" class="danger-menu-action" type="button" role="menuitem">删除快捷方式</button>
     </div>
     <div id="group-item-settings-menu" class="shortcut-settings-menu" role="menu" aria-label="文件夹内快捷方式设置" hidden>
@@ -74,10 +92,19 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 16.2 7.8L13 11h8V3l-3.35 3.35Z"/></svg>
       <span>下一张</span>
     </button>
+    <button id="manage-shortcuts-button" class="page-action-button" type="button" aria-label="批量管理快捷方式">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h10v2H4V5Zm0 6h10v2H4v-2Zm0 6h10v2H4v-2Zm13.6-1.4L15 13l1.4-1.4 1.2 1.2 3-3L22 11.2l-4.4 4.4Z"/></svg>
+      <span>管理</span>
+    </button>
     <button id="customize-button" class="page-action-button customize-button" type="button" aria-label="打开设置">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.71 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58ZM12 15.6A3.61 3.61 0 0 1 8.4 12c0-1.98 1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6Z"/></svg>
       <span>设置</span>
     </button>
+  </div>
+  <div id="shortcut-selection-bar" class="shortcut-selection-bar" role="toolbar" aria-label="批量管理快捷方式" hidden>
+    <span id="shortcut-selection-count">已选择 0 项</span>
+    <button id="cancel-shortcut-selection" class="secondary-button" type="button">取消</button>
+    <button id="delete-selected-shortcuts" class="danger-button" type="button" disabled>删除</button>
   </div>
 
   <dialog id="shortcut-dialog" class="dialog-card">
@@ -88,10 +115,40 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18.3 5.7-1-1L12 10l-5.3-5.3-1 1L11 11l-5.3 5.3 1 1L12 12l5.3 5.3 1-1L13 11l5.3-5.3Z"/></svg>
         </button>
       </div>
-      <button id="bookmark-picker-button" class="bookmark-picker-button" type="button" aria-expanded="false" aria-controls="bookmark-picker">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2Zm0 15.9-5-2.2-5 2.2V5h10v13.9Z"/></svg>
-        <span>从 Edge 收藏夹选择</span>
-      </button>
+      <div id="shortcut-main-tabs" class="shortcut-main-tabs" role="tablist" aria-label="添加方式">
+        <button id="shortcut-tab-library" type="button" role="tab" aria-controls="shortcut-library-panel" aria-selected="true">资源库</button>
+        <button id="shortcut-tab-custom" type="button" role="tab" aria-controls="shortcut-custom-panel" aria-selected="false">自定义</button>
+      </div>
+      <section id="shortcut-library-panel" class="shortcut-library-panel" role="tabpanel" aria-labelledby="shortcut-tab-library">
+        <div class="shortcut-import-actions" role="tablist" aria-label="资源来源">
+          <button id="resource-picker-button" class="bookmark-picker-button" type="button" role="tab" aria-selected="true" aria-controls="resource-picker">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"/></svg>
+            <span>内置资源</span>
+          </button>
+          <button id="bookmark-picker-button" class="bookmark-picker-button" type="button" role="tab" aria-selected="false" aria-controls="bookmark-picker">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2Zm0 15.9-5-2.2-5 2.2V5h10v13.9Z"/></svg>
+            <span>浏览器收藏夹</span>
+          </button>
+        </div>
+      <section id="resource-picker" class="bookmark-picker resource-picker" role="tabpanel" aria-label="内置快捷方式资源库">
+        <label class="bookmark-search-label" for="resource-search">搜索资源库</label>
+        <div class="bookmark-search-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.3 19-4.7-4.7a7 7 0 1 0-1.4 1.4l4.7 4.7a1 1 0 0 0 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>
+          <input id="resource-search" type="search" autocomplete="off" placeholder="搜索名称、网址或分类">
+        </div>
+        <div id="resource-categories" class="resource-categories" aria-label="资源分类"></div>
+        <p id="resource-status" class="bookmark-status" role="status"></p>
+        <div id="resource-list" class="resource-list" role="listbox" aria-label="可添加的网站"></div>
+        <div class="resource-library-footer">
+          <span id="resource-selection-count">已选择 0 个</span>
+          <label>添加到
+            <select id="resource-destination" aria-label="资源库添加位置">
+              <option value="root">主页</option>
+            </select>
+          </label>
+          <button id="resource-add-selected" class="primary-button" type="button" disabled>添加已选</button>
+        </div>
+      </section>
       <section id="bookmark-picker" class="bookmark-picker" aria-label="Edge 收藏夹" hidden>
         <label class="bookmark-search-label" for="bookmark-search">搜索收藏夹</label>
         <div class="bookmark-search-wrap">
@@ -101,10 +158,19 @@
         <p id="bookmark-status" class="bookmark-status" role="status"></p>
         <div id="bookmark-list" class="bookmark-list" role="listbox" aria-label="收藏夹网站"></div>
       </section>
-      <label>名称<input id="shortcut-name" name="name" maxlength="32" required></label>
-      <label id="shortcut-url-label">网址<input id="shortcut-url" name="url" inputmode="url" placeholder="https://example.com" required></label>
-      <fieldset id="shortcut-icon-settings" class="shortcut-icon-settings">
+      </section>
+      <section id="shortcut-custom-panel" class="shortcut-custom-panel" role="tabpanel" aria-labelledby="shortcut-tab-custom" hidden>
+      <section class="shortcut-form-section shortcut-details-section">
+        <div class="shortcut-form-section-heading">
+          <h3>基本信息</h3>
+          <p>输入名称和要打开的网站地址</p>
+        </div>
+        <label id="shortcut-name-label">名称<input id="shortcut-name" name="name" maxlength="32" placeholder="例如：GitHub" required></label>
+        <label id="shortcut-url-label">网址<input id="shortcut-url" name="url" inputmode="url" placeholder="https://example.com" required></label>
+      </section>
+      <fieldset id="shortcut-icon-settings" class="shortcut-icon-settings shortcut-form-section">
         <legend>图标</legend>
+        <p class="shortcut-section-description">自动获取清晰图标，也可以指定图片或上传本地文件</p>
         <div class="shortcut-icon-setting-row">
           <select id="shortcut-icon-mode" aria-label="图标来源">
             <option value="auto">自动（本地矢量或网站图标）</option>
@@ -121,22 +187,48 @@
         </label>
         <p class="shortcut-icon-hint">推荐 SVG、PNG 或 WebP；本地图片仅保存在此扩展中。</p>
       </fieldset>
-      <label class="shortcut-destination-label">保存到
-        <span class="shortcut-destination-row">
-          <select id="shortcut-destination" name="destination" aria-label="快捷方式保存位置">
-            <option value="root">主页</option>
-          </select>
-          <button id="show-new-group" class="secondary-button compact-button" type="button">新建文件夹</button>
-        </span>
-      </label>
-      <div id="new-group-panel" class="new-group-panel" hidden>
-        <input id="new-group-name" type="text" maxlength="24" placeholder="输入文件夹名称" aria-label="文件夹名称">
-        <button id="create-group-button" class="primary-button compact-button" type="button">创建</button>
-      </div>
+      <section id="shortcut-location-section" class="shortcut-form-section shortcut-location-section">
+        <div class="shortcut-form-section-heading">
+          <h3>保存位置</h3>
+          <p>添加到主页或已有文件夹</p>
+        </div>
+        <label class="shortcut-destination-label">位置
+          <span class="shortcut-destination-row">
+            <select id="shortcut-destination" name="destination" aria-label="快捷方式保存位置">
+              <option value="root">主页</option>
+            </select>
+            <button id="show-new-group" class="secondary-button compact-button" type="button">新建文件夹</button>
+          </span>
+        </label>
+        <div id="new-group-panel" class="new-group-panel" hidden>
+          <input id="new-group-name" type="text" maxlength="24" placeholder="输入文件夹名称" aria-label="文件夹名称">
+          <button id="create-group-button" class="primary-button compact-button" type="button">创建</button>
+        </div>
+      </section>
       <p id="shortcut-error" class="form-error" role="alert"></p>
       <div class="dialog-actions">
         <button class="secondary-button" type="button" data-close="shortcut-dialog">取消</button>
         <button class="primary-button" type="submit">完成</button>
+      </div>
+      </section>
+    </form>
+  </dialog>
+
+  <dialog id="resource-url-dialog" class="dialog-card resource-url-dialog">
+    <form id="resource-url-form" method="dialog">
+      <div class="dialog-heading">
+        <h2>编辑资源网址</h2>
+        <button class="icon-button close-button" type="button" data-close="resource-url-dialog" aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18.3 5.7-1-1L12 10l-5.3-5.3-1 1L11 11l-5.3 5.3 1 1L12 12l5.3 5.3 1-1L13 11l5.3-5.3Z"/></svg>
+        </button>
+      </div>
+      <p id="resource-url-name" class="resource-url-name"></p>
+      <label>默认 URL<input id="resource-default-url" type="url" readonly></label>
+      <label>自定义 URL<input id="resource-url-input" type="url" inputmode="url" required></label>
+      <p id="resource-url-error" class="form-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button id="resource-url-reset" class="secondary-button" type="button">恢复默认</button>
+        <button class="primary-button" type="submit">保存</button>
       </div>
     </form>
   </dialog>
@@ -175,6 +267,19 @@
           <label><input type="radio" name="searchEngine" value="google"><span>Google</span></label>
           <label><input type="radio" name="searchEngine" value="baidu"><span>百度</span></label>
           <label><input type="radio" name="searchEngine" value="bing"><span>必应</span></label>
+          <label><input type="radio" name="searchEngine" value="sogou"><span>搜狗</span></label>
+          <label><input type="radio" name="searchEngine" value="so360"><span>360 搜索</span></label>
+          <label><input type="radio" name="searchEngine" value="doubao"><span>豆包</span></label>
+          <label><input type="radio" name="searchEngine" value="deepseek"><span>DeepSeek</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>快捷方式显示</legend>
+        <div class="engine-options">
+          <label><input type="radio" name="shortcutRows" value="0"><span>不显示</span></label>
+          <label><input type="radio" name="shortcutRows" value="1"><span>1 行</span></label>
+          <label><input type="radio" name="shortcutRows" value="2"><span>2 行</span></label>
+          <label><input type="radio" name="shortcutRows" value="3" checked><span>3 行</span></label>
         </div>
       </fieldset>
       <fieldset>

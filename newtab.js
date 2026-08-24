@@ -22,6 +22,34 @@ const SEARCH_ENGINES = {
     parseSuggestions: (data) => Array.isArray(data?.[1]) ? data[1] : [],
     recommendations: ['今日新闻', '图片搜索', 'AI 工具', '旅行攻略'],
     logo: '<span class="engine-logo bing-logo" aria-hidden="true"><svg class="microsoft-mark" viewBox="0 0 46 46"><path fill="#f25022" d="M1 1h21v21H1z"/><path fill="#7fba00" d="M24 1h21v21H24z"/><path fill="#00a4ef" d="M1 24h21v21H1z"/><path fill="#ffb900" d="M24 24h21v21H24z"/></svg><span class="bing-copy"><span class="microsoft-label">Microsoft</span><span class="bing-name">Bing</span></span></span>'
+  },
+  sogou: {
+    name: '搜狗',
+    searchUrl: 'https://www.sogou.com/web?query=',
+    recommendations: ['搜狗热搜', '今日天气', '新闻资讯', '微信文章'],
+    logo: '<span class="engine-logo sogou-logo" aria-hidden="true"><svg class="sogou-mark" viewBox="0 0 64 64"><circle cx="32" cy="32" r="25" fill="none" stroke="currentColor" stroke-width="6"/><path d="M43 21c-4-4-17-4-21 1-5 7 2 11 10 11 8 0 13 4 9 9-4 5-15 4-20 0" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg><span>搜狗搜索</span></span>'
+  },
+  so360: {
+    name: '360',
+    searchUrl: 'https://www.so.com/s?q=',
+    suggestUrl: (query) => `https://sug.so.360.cn/suggest?word=${encodeURIComponent(query)}&encodein=utf-8&encodeout=utf-8`,
+    parseSuggestions: (data) => Array.isArray(data?.result) ? data.result.map((item) => item?.word).filter(Boolean) : [],
+    recommendations: ['360热搜', '今日天气', '最新资讯', '实用工具'],
+    logo: '<span class="engine-logo so360-logo" aria-hidden="true"><span class="so360-mark"><i></i></span><span>360搜索</span></span>'
+  },
+  doubao: {
+    name: '豆包',
+    type: 'ai',
+    chatUrl: 'https://www.doubao.com/chat/',
+    recommendations: [],
+    logo: '<span class="engine-logo ai-engine-logo" aria-hidden="true"><img src="icons/sites/doubao.com.png" alt=""><span>问豆包</span></span>'
+  },
+  deepseek: {
+    name: 'DeepSeek',
+    type: 'ai',
+    chatUrl: 'https://chat.deepseek.com/',
+    recommendations: [],
+    logo: '<span class="engine-logo ai-engine-logo deepseek-engine-logo" aria-hidden="true"><img src="icons/sites/chat.deepseek.com.png" alt=""><span>问 DeepSeek</span></span>'
   }
 };
 const SEARCH_ENGINE_ORDER = Object.keys(SEARCH_ENGINES);
@@ -64,12 +92,38 @@ const NATIVE_SEARCH_BOXES = {
       { id: 'voice', label: '语音搜索' },
       { id: 'visual', label: 'Bing 视觉搜索' }
     ]
+  },
+  sogou: {
+    placeholder: '搜狗搜索',
+    showSearchIcon: false,
+    submitLabel: '搜索',
+    actions: []
+  },
+  so360: {
+    placeholder: '搜你想搜的',
+    showSearchIcon: false,
+    submitLabel: '搜索',
+    actions: [
+      { id: 'ai', icon: 'sparkle', label: '问AI', text: true }
+    ]
+  },
+  doubao: {
+    placeholder: '输入问题，按 Enter 发送给豆包',
+    showSearchIcon: false,
+    submitLabel: '发送',
+    actions: []
+  },
+  deepseek: {
+    placeholder: '输入问题，按 Enter 发送给 DeepSeek',
+    showSearchIcon: false,
+    submitLabel: '发送',
+    actions: []
   }
 };
 
-const SHORTCUT_COLUMNS = 7;
-const SHORTCUT_ROWS = 3;
-const SHORTCUT_PAGE_SIZE = SHORTCUT_COLUMNS * SHORTCUT_ROWS - 1; // 每页 21 格，含末尾的添加按钮
+const SHORTCUT_GAP = 8;
+const SHORTCUT_DESKTOP_WIDTH = 104;
+const SHORTCUT_COMPACT_WIDTH = 88;
 
 const DEFAULT_SHORTCUTS = [
   { name: 'Gmail', url: 'https://mail.google.com/' },
@@ -78,14 +132,95 @@ const DEFAULT_SHORTCUTS = [
   { name: '云端硬盘', url: 'https://drive.google.com/' }
 ];
 
+const SHORTCUT_LIBRARY = [
+  { name: '百度', url: 'https://www.baidu.com/', category: '工具' },
+  { name: '哔哩哔哩', url: 'https://www.bilibili.com/', category: '影音' },
+  { name: '知乎', url: 'https://www.zhihu.com/', category: '社区' },
+  { name: '微博', url: 'https://weibo.com/', category: '社区' },
+  { name: '淘宝', url: 'https://www.taobao.com/', category: '购物' },
+  { name: '京东', url: 'https://www.jd.com/', category: '购物' },
+  { name: '拼多多', url: 'https://www.pinduoduo.com/', category: '购物' },
+  { name: '小红书', url: 'https://www.xiaohongshu.com/', category: '社区' },
+  { name: '豆瓣', url: 'https://www.douban.com/', category: '社区' },
+  { name: '什么值得买', url: 'https://www.smzdm.com/', category: '购物' },
+  { name: '虎扑', url: 'https://www.hupu.com/', category: '社区' },
+  { name: '百度贴吧', url: 'https://tieba.baidu.com/', category: '社区' },
+  { name: 'ChatGPT', url: 'https://chatgpt.com/', category: 'AI' },
+  { name: 'DeepSeek', url: 'https://chat.deepseek.com/', category: 'AI' },
+  { name: '通义千问', url: 'https://www.tongyi.com/', category: 'AI' },
+  { name: '豆包', url: 'https://www.doubao.com/', category: 'AI' },
+  { name: 'Claude', url: 'https://claude.ai/', category: 'AI' },
+  { name: 'Gemini', url: 'https://gemini.google.com/', category: 'AI' },
+  { name: 'Kimi', url: 'https://www.kimi.com/', category: 'AI' },
+  { name: '腾讯元宝', url: 'https://yuanbao.tencent.com/', category: 'AI' },
+  { name: 'Microsoft Copilot', url: 'https://copilot.microsoft.com/', category: 'AI' },
+  { name: 'Perplexity', url: 'https://www.perplexity.ai/', category: 'AI' },
+  { name: '秘塔AI搜索', url: 'https://metaso.cn/', category: 'AI' },
+  { name: '可灵AI', url: 'https://klingai.kuaishou.com/', category: 'AI' },
+  { name: 'GitHub', url: 'https://github.com/', category: '开发' },
+  { name: 'Gitee', url: 'https://gitee.com/', category: '开发' },
+  { name: 'Stack Overflow', url: 'https://stackoverflow.com/', category: '开发' },
+  { name: 'MDN', url: 'https://developer.mozilla.org/', category: '开发' },
+  { name: 'Vercel', url: 'https://vercel.com/', category: '开发' },
+  { name: 'Cloudflare', url: 'https://www.cloudflare.com/', category: '开发' },
+  { name: 'npm', url: 'https://www.npmjs.com/', category: '开发' },
+  { name: 'Docker Hub', url: 'https://hub.docker.com/', category: '开发' },
+  { name: 'LeetCode', url: 'https://leetcode.cn/', category: '开发' },
+  { name: '掘金', url: 'https://juejin.cn/', category: '开发' },
+  { name: 'CSDN', url: 'https://www.csdn.net/', category: '开发' },
+  { name: 'SegmentFault', url: 'https://segmentfault.com/', category: '开发' },
+  { name: 'Gmail', url: 'https://mail.google.com/', category: '办公' },
+  { name: 'Google Drive', url: 'https://drive.google.com/', category: '办公' },
+  { name: '腾讯文档', url: 'https://docs.qq.com/', category: '办公' },
+  { name: '飞书', url: 'https://www.feishu.cn/', category: '办公' },
+  { name: 'Notion', url: 'https://www.notion.so/', category: '办公' },
+  { name: '钉钉', url: 'https://www.dingtalk.com/', category: '办公' },
+  { name: 'WPS云文档', url: 'https://www.kdocs.cn/', category: '办公' },
+  { name: 'Microsoft 365', url: 'https://www.microsoft365.com/', category: '办公' },
+  { name: 'OneDrive', url: 'https://onedrive.live.com/', category: '办公' },
+  { name: 'Dropbox', url: 'https://www.dropbox.com/', category: '办公' },
+  { name: 'Canva', url: 'https://www.canva.com/', category: '办公' },
+  { name: '石墨文档', url: 'https://shimo.im/', category: '办公' },
+  { name: 'YouTube', url: 'https://www.youtube.com/', category: '影音' },
+  { name: '腾讯视频', url: 'https://v.qq.com/', category: '影音' },
+  { name: '爱奇艺', url: 'https://www.iqiyi.com/', category: '影音' },
+  { name: '网易云音乐', url: 'https://music.163.com/', category: '影音' },
+  { name: '优酷', url: 'https://www.youku.com/', category: '影音' },
+  { name: '芒果TV', url: 'https://www.mgtv.com/', category: '影音' },
+  { name: 'QQ音乐', url: 'https://y.qq.com/', category: '影音' },
+  { name: 'Spotify', url: 'https://open.spotify.com/', category: '影音' },
+  { name: '抖音', url: 'https://www.douyin.com/', category: '影音' },
+  { name: 'AcFun', url: 'https://www.acfun.cn/', category: '影音' },
+  { name: 'Google翻译', url: 'https://translate.google.com/', category: '工具' },
+  { name: '百度翻译', url: 'https://fanyi.baidu.com/', category: '工具' },
+  { name: '高德地图', url: 'https://www.amap.com/', category: '工具' },
+  { name: '百度地图', url: 'https://map.baidu.com/', category: '工具' },
+  { name: '铁路12306', url: 'https://www.12306.cn/', category: '工具' },
+  { name: '携程旅行', url: 'https://www.ctrip.com/', category: '工具' },
+  { name: '中国天气网', url: 'https://www.weather.com.cn/', category: '工具' },
+  { name: '快递100', url: 'https://www.kuaidi100.com/', category: '工具' },
+  { name: 'ProcessOn', url: 'https://www.processon.com/', category: '工具' },
+  { name: 'TinyPNG', url: 'https://tinypng.com/', category: '工具' },
+  { name: 'Unsplash', url: 'https://unsplash.com/', category: '工具' },
+  { name: 'Internet Archive', url: 'https://archive.org/', category: '工具' }
+];
+
+const BUNDLED_SITE_ICON_HOSTS = new Set(SHORTCUT_LIBRARY.map((resource) => new URL(resource.url).hostname.replace(/^www\./, '')));
+const BUNDLED_SITE_ICON_ALIASES = {
+  'office.com': 'microsoft365.com',
+  'chat.openai.com': 'chatgpt.com'
+};
+
 const state = {
   searchEngine: 'google',
   searchHistory: [],
   shortcuts: [],
   iconSourceCache: {},
+  resourceOverrides: {},
   customization: {
     theme: 'light',
-    wallpaper: { mode: 'none', image: '' }
+    wallpaper: { mode: 'none', image: '' },
+    shortcutRows: 3
   }
 };
 
@@ -108,6 +243,8 @@ const elements = {
   shortcutPagination: document.querySelector('#shortcut-pagination'),
   shortcutSettingsMenu: document.querySelector('#shortcut-settings-menu'),
   shortcutEditAction: document.querySelector('#shortcut-edit-action'),
+  shortcutMovePrevAction: document.querySelector('#shortcut-move-prev-action'),
+  shortcutMoveNextAction: document.querySelector('#shortcut-move-next-action'),
   shortcutDeleteAction: document.querySelector('#shortcut-delete-action'),
   groupItemSettingsMenu: document.querySelector('#group-item-settings-menu'),
   groupItemOpenAction: document.querySelector('#group-item-open-action'),
@@ -116,6 +253,11 @@ const elements = {
   shortcutDialog: document.querySelector('#shortcut-dialog'),
   shortcutDialogTitle: document.querySelector('#shortcut-dialog-title'),
   shortcutForm: document.querySelector('#shortcut-form'),
+  shortcutMainTabs: document.querySelector('#shortcut-main-tabs'),
+  shortcutTabLibrary: document.querySelector('#shortcut-tab-library'),
+  shortcutTabCustom: document.querySelector('#shortcut-tab-custom'),
+  shortcutLibraryPanel: document.querySelector('#shortcut-library-panel'),
+  shortcutCustomPanel: document.querySelector('#shortcut-custom-panel'),
   shortcutName: document.querySelector('#shortcut-name'),
   shortcutUrl: document.querySelector('#shortcut-url'),
   shortcutUrlLabel: document.querySelector('#shortcut-url-label'),
@@ -126,7 +268,24 @@ const elements = {
   shortcutIconFileLabel: document.querySelector('#shortcut-icon-file-label'),
   shortcutIconFile: document.querySelector('#shortcut-icon-file'),
   shortcutIconPreview: document.querySelector('#shortcut-icon-preview'),
+  resourcePickerButton: document.querySelector('#resource-picker-button'),
+  resourcePicker: document.querySelector('#resource-picker'),
+  resourceSearch: document.querySelector('#resource-search'),
+  resourceCategories: document.querySelector('#resource-categories'),
+  resourceList: document.querySelector('#resource-list'),
+  resourceStatus: document.querySelector('#resource-status'),
+  resourceSelectionCount: document.querySelector('#resource-selection-count'),
+  resourceDestination: document.querySelector('#resource-destination'),
+  resourceAddSelected: document.querySelector('#resource-add-selected'),
+  resourceUrlDialog: document.querySelector('#resource-url-dialog'),
+  resourceUrlForm: document.querySelector('#resource-url-form'),
+  resourceUrlName: document.querySelector('#resource-url-name'),
+  resourceDefaultUrl: document.querySelector('#resource-default-url'),
+  resourceUrlInput: document.querySelector('#resource-url-input'),
+  resourceUrlError: document.querySelector('#resource-url-error'),
+  resourceUrlReset: document.querySelector('#resource-url-reset'),
   shortcutDestination: document.querySelector('#shortcut-destination'),
+  shortcutLocationSection: document.querySelector('#shortcut-location-section'),
   showNewGroup: document.querySelector('#show-new-group'),
   newGroupPanel: document.querySelector('#new-group-panel'),
   newGroupName: document.querySelector('#new-group-name'),
@@ -136,6 +295,11 @@ const elements = {
   shortcutGroupList: document.querySelector('#shortcut-group-list'),
   groupAddShortcut: document.querySelector('#group-add-shortcut'),
   shortcutError: document.querySelector('#shortcut-error'),
+  manageShortcutsButton: document.querySelector('#manage-shortcuts-button'),
+  shortcutSelectionBar: document.querySelector('#shortcut-selection-bar'),
+  shortcutSelectionCount: document.querySelector('#shortcut-selection-count'),
+  cancelShortcutSelection: document.querySelector('#cancel-shortcut-selection'),
+  deleteSelectedShortcuts: document.querySelector('#delete-selected-shortcuts'),
   customizeButton: document.querySelector('#customize-button'),
   nextWallpaperButton: document.querySelector('#next-wallpaper-button'),
   customizeDialog: document.querySelector('#customize-dialog'),
@@ -269,7 +433,10 @@ async function handleNativeSearchAction(action) {
   const query = elements.searchInput.value.trim();
   if (query) await addSearchHistory(query);
   if (action === 'ai') {
-    window.location.assign(`https://www.google.com/search?udm=50${query ? `&q=${encodeURIComponent(query)}` : ''}`);
+    const destination = state.searchEngine === 'so360'
+      ? `https://ai.so.com/search${query ? `?q=${encodeURIComponent(query)}` : ''}`
+      : `https://www.google.com/search?udm=50${query ? `&q=${encodeURIComponent(query)}` : ''}`;
+    window.location.assign(destination);
   } else if (action === 'copilot') {
     window.location.assign(`https://www.bing.com/copilotsearch${query ? `?q=${encodeURIComponent(query)}` : ''}`);
   }
@@ -277,10 +444,10 @@ async function handleNativeSearchAction(action) {
 
 function renderSearchEngine() {
   const engine = SEARCH_ENGINES[state.searchEngine];
+  const isAi = engine.type === 'ai';
   elements.searchEngineSwitch.innerHTML = engine.logo;
-  elements.searchEngineSwitch.setAttribute('aria-label', `当前使用${engine.name}搜索，点击展开搜索引擎`);
-  elements.searchInput.setAttribute('aria-label', `使用${engine.name}搜索或输入网址`);
-  elements.searchInput.placeholder = `使用${engine.name}搜索或输入网址`;
+  elements.searchEngineSwitch.setAttribute('aria-label', isAi ? `当前向${engine.name}提问，点击切换` : `当前使用${engine.name}搜索，点击展开搜索引擎`);
+  elements.searchInput.setAttribute('aria-label', isAi ? `向${engine.name}提问` : `使用${engine.name}搜索或输入网址`);
   renderNativeSearchBox();
   document.querySelectorAll('#search-engine-menu [data-engine]').forEach((option) => {
     option.setAttribute('aria-checked', String(option.dataset.engine === state.searchEngine));
@@ -491,7 +658,7 @@ function renderSearchSuggestions(remoteSuggestions = [], status = '') {
   const query = elements.searchInput.value.trim();
   const normalizedQuery = query.toLocaleLowerCase();
   const engine = SEARCH_ENGINES[state.searchEngine];
-  const history = state.searchHistory
+  const history = (engine.type === 'ai' ? [] : state.searchHistory)
     .filter((item) => !normalizedQuery || item.query.toLocaleLowerCase().includes(normalizedQuery))
     .slice(0, normalizedQuery ? 4 : 6);
   const seen = new Set(history.map((item) => item.query.toLocaleLowerCase()));
@@ -572,8 +739,18 @@ function refreshSearchSuggestions() {
     renderSearchSuggestions();
     return;
   }
+  const engine = SEARCH_ENGINES[state.searchEngine];
+  if (engine.type === 'ai') {
+    renderSearchSuggestions([], `按 Enter 发送给${engine.name}`);
+    return;
+  }
   if (!shouldRequestSuggestions(query)) {
     renderSearchSuggestions([], '继续输入以获取联想');
+    return;
+  }
+
+  if (typeof engine.suggestUrl !== 'function') {
+    renderSearchSuggestions([], `按 Enter 使用${engine.name}搜索`);
     return;
   }
 
@@ -597,13 +774,27 @@ async function navigateFromSearch(query) {
   if (!value) return;
 
   setSearchSuggestionsOpen(false);
+  const engine = SEARCH_ENGINES[state.searchEngine];
+  if (engine.type === 'ai') {
+    if (hasExtensionApi('storage') && chrome.storage.session) {
+      await chrome.storage.session.set({
+        pendingAiPrompt: {
+          id: globalThis.crypto?.randomUUID?.() || `ai-${Date.now()}`,
+          provider: state.searchEngine,
+          text: value,
+          createdAt: Date.now()
+        }
+      });
+    }
+    window.location.assign(engine.chatUrl);
+    return;
+  }
   if (looksLikeUrl(value)) {
     window.location.assign(normalizeUrl(value));
     return;
   }
 
   await addSearchHistory(value);
-  const engine = SEARCH_ENGINES[state.searchEngine];
   window.location.assign(`${engine.searchUrl}${encodeURIComponent(value)}`);
 }
 
@@ -703,8 +894,11 @@ function getShortcutHost(pageUrl) {
   }
 }
 
-const ICON_SOURCE_TIMEOUT = 5000;
+const ICON_SOURCE_TIMEOUT = 4500;
 const ICON_SOURCE_CACHE_LIMIT = 200;
+const ICON_CACHE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+const ICON_DATA_CACHE_MAX_BYTES = 160 * 1024;
+const ICON_RENDER_SIZE = 48;
 const resolvedIconCache = new Map();
 const pendingIconResolutions = new Map();
 let iconCacheWriteTimer;
@@ -723,16 +917,27 @@ function isReusableIconUrl(url) {
 function hydrateResolvedIconCache(cache) {
   resolvedIconCache.clear();
   const entries = cache && typeof cache === 'object' ? Object.entries(cache) : [];
-  entries.slice(-ICON_SOURCE_CACHE_LIMIT).forEach(([host, url]) => {
-    if (host && isReusableIconUrl(url)) resolvedIconCache.set(host, url);
+  entries.slice(-ICON_SOURCE_CACHE_LIMIT).forEach(([host, value]) => {
+    const record = typeof value === 'string' ? { url: value, updatedAt: 0 } : value;
+    if (!host || !record || !isReusableIconUrl(record.dataUrl || record.url)) return;
+    if (record.updatedAt && Date.now() - record.updatedAt > ICON_CACHE_MAX_AGE) return;
+    resolvedIconCache.set(host, record);
   });
   state.iconSourceCache = Object.fromEntries(resolvedIconCache);
 }
 
-function rememberResolvedIcon(host, url) {
-  if (!host || !isReusableIconUrl(url)) return;
+function getBundledSiteIconUrl(pageUrl) {
+  const host = getShortcutHost(pageUrl);
+  const iconHost = BUNDLED_SITE_ICON_ALIASES[host] || host;
+  if (!BUNDLED_SITE_ICON_HOSTS.has(iconHost)) return '';
+  const path = `icons/sites/${iconHost}.png`;
+  return hasExtensionApi('runtime') ? chrome.runtime.getURL(path) : path;
+}
+
+function rememberResolvedIcon(host, result) {
+  if (!host || !isReusableIconUrl(result?.url)) return;
   resolvedIconCache.delete(host);
-  resolvedIconCache.set(host, url);
+  resolvedIconCache.set(host, { url: result.url, width: result.width, height: result.height, updatedAt: Date.now() });
   while (resolvedIconCache.size > ICON_SOURCE_CACHE_LIMIT) {
     resolvedIconCache.delete(resolvedIconCache.keys().next().value);
   }
@@ -743,11 +948,37 @@ function rememberResolvedIcon(host, url) {
   }, 100);
 }
 
-function getCachedIconUrl(pageUrl) {
-  return resolvedIconCache.get(getShortcutHost(pageUrl)) || '';
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('icon cache read failed'));
+    reader.readAsDataURL(blob);
+  });
 }
 
-function probeIconSource(url, minSize) {
+async function persistResolvedIconData(host, result) {
+  if (!host || !result?.url || result.local || result.url.startsWith('data:')) return;
+  try {
+    const response = await fetch(result.url, { cache: 'force-cache', credentials: 'omit', referrerPolicy: 'no-referrer' });
+    if (!response.ok || !response.headers.get('content-type')?.startsWith('image/')) return;
+    const blob = await response.blob();
+    if (!blob.size || blob.size > ICON_DATA_CACHE_MAX_BYTES) return;
+    const dataUrl = await blobToDataUrl(blob);
+    const current = resolvedIconCache.get(host);
+    if (!current || current.url !== result.url || !isReusableIconUrl(dataUrl)) return;
+    resolvedIconCache.set(host, { ...current, dataUrl, updatedAt: Date.now() });
+    state.iconSourceCache = Object.fromEntries(resolvedIconCache);
+    await storageSet({ iconSourceCache: state.iconSourceCache });
+  } catch {}
+}
+
+function getCachedIconUrl(pageUrl) {
+  const cached = resolvedIconCache.get(getShortcutHost(pageUrl));
+  return cached?.dataUrl || cached?.url || '';
+}
+
+function probeIconSource(candidate) {
   return new Promise((resolve, reject) => {
     const image = new Image();
     const timer = setTimeout(() => {
@@ -756,8 +987,17 @@ function probeIconSource(url, minSize) {
     }, ICON_SOURCE_TIMEOUT);
     image.onload = () => {
       clearTimeout(timer);
-      if (image.naturalWidth >= minSize) resolve(url);
-      else reject(new Error('low-resolution'));
+      const width = image.naturalWidth;
+      const height = image.naturalHeight;
+      const shortestSide = Math.min(width, height);
+      const aspectRatio = width / Math.max(1, height);
+      if (shortestSide < candidate.minSize || aspectRatio < .55 || aspectRatio > 1.8) {
+        reject(new Error('low-quality'));
+        return;
+      }
+      const vectorBonus = candidate.vector ? 2000 : 0;
+      const firstPartyBonus = candidate.firstParty ? 80 : 0;
+      resolve({ ...candidate, width, height, score: vectorBonus + firstPartyBonus + Math.min(shortestSide, 1024) });
     };
     image.onerror = () => {
       clearTimeout(timer);
@@ -765,41 +1005,68 @@ function probeIconSource(url, minSize) {
     };
     image.referrerPolicy = 'no-referrer';
     image.decoding = 'async';
-    image.src = url;
+    image.src = candidate.url;
   });
 }
 
 function getIconSourceCandidates(pageUrl) {
   const host = getShortcutHost(pageUrl);
   const candidates = [];
-  const local = getFaviconUrl(pageUrl, 64);
-  if (local) candidates.push({ url: local, minSize: 16 });
+  try {
+    const origin = new URL(pageUrl).origin;
+    candidates.push(
+      { url: `${origin}/favicon.svg`, minSize: 24, vector: true, firstParty: true },
+      { url: `${origin}/apple-touch-icon.png`, minSize: 64, firstParty: true },
+      { url: `${origin}/favicon-512x512.png`, minSize: 96, firstParty: true },
+      { url: `${origin}/favicon-192x192.png`, minSize: 64, firstParty: true },
+      { url: `${origin}/favicon.png`, minSize: 48, firstParty: true },
+      { url: `${origin}/favicon.ico`, minSize: 32, firstParty: true }
+    );
+  } catch {}
   if (host) {
     candidates.push(
-      { url: `https://logo.clearbit.com/${encodeURIComponent(host)}?size=128`, minSize: 64 },
-      { url: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`, minSize: 64 },
-      { url: `https://icon.horse/icon/${encodeURIComponent(host)}`, minSize: 16 },
-      { url: `https://icons.duckduckgo.com/ip3/${encodeURIComponent(host)}.ico`, minSize: 16 }
+      { url: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=256`, minSize: 64 },
+      { url: `https://logo.clearbit.com/${encodeURIComponent(host)}?size=256`, minSize: 64 },
+      { url: `https://icon.horse/icon/${encodeURIComponent(host)}`, minSize: 32 },
+      { url: `https://icons.duckduckgo.com/ip3/${encodeURIComponent(host)}.ico`, minSize: 32 }
     );
   }
+  const physicalSize = Math.min(256, Math.max(64, Math.ceil(ICON_RENDER_SIZE * (window.devicePixelRatio || 1))));
+  const local = getFaviconUrl(pageUrl, physicalSize);
+  if (local) candidates.push({ url: local, minSize: 16, local: true });
   return candidates;
 }
 
 function resolveIconUrl(pageUrl) {
   const host = getShortcutHost(pageUrl);
-  const cached = host ? resolvedIconCache.get(host) : '';
-  if (cached) return Promise.resolve(cached);
+  const cached = host ? resolvedIconCache.get(host) : null;
+  if (cached?.dataUrl || cached?.url) return Promise.resolve(cached.dataUrl || cached.url);
   if (host && pendingIconResolutions.has(host)) return pendingIconResolutions.get(host);
 
   const request = (async () => {
-    for (const candidate of getIconSourceCandidates(pageUrl)) {
-      try {
-        const resolved = await probeIconSource(candidate.url, candidate.minSize);
-        rememberResolvedIcon(host, resolved);
-        return resolved;
-      } catch {}
+    const candidates = getIconSourceCandidates(pageUrl);
+    const firstPartyResults = await Promise.allSettled(candidates.filter((candidate) => candidate.firstParty).map(probeIconSource));
+    const firstPartyIcons = firstPartyResults
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value);
+    const strongFirstParty = firstPartyIcons
+      .filter((result) => result.vector || Math.min(result.width, result.height) >= 96)
+      .sort((a, b) => b.score - a.score)[0];
+    if (strongFirstParty) {
+      rememberResolvedIcon(host, strongFirstParty);
+      persistResolvedIconData(host, strongFirstParty);
+      return strongFirstParty.url;
     }
-    return '';
+
+    const fallbackResults = await Promise.allSettled(candidates.filter((candidate) => !candidate.firstParty).map(probeIconSource));
+    const best = [...firstPartyIcons, ...fallbackResults
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value)]
+      .sort((a, b) => b.score - a.score)[0];
+    if (!best) return '';
+    rememberResolvedIcon(host, best);
+    persistResolvedIconData(host, best);
+    return best.url;
   })();
 
   if (host) {
@@ -825,8 +1092,14 @@ function attachIconImage(icon, url) {
 }
 
 function attachResolvedFavicon(icon, pageUrl) {
+  const bundled = getBundledSiteIconUrl(pageUrl);
+  if (bundled) {
+    attachIconImage(icon, bundled);
+    return;
+  }
   const cached = getCachedIconUrl(pageUrl);
-  const immediate = cached || getFaviconUrl(pageUrl, 64);
+  const physicalSize = Math.min(256, Math.max(64, Math.ceil(ICON_RENDER_SIZE * (window.devicePixelRatio || 1))));
+  const immediate = cached || getFaviconUrl(pageUrl, physicalSize);
   if (immediate) attachIconImage(icon, immediate);
   if (cached) return;
   resolveIconUrl(pageUrl).then((resolved) => {
@@ -928,6 +1201,9 @@ function openShortcutSettingsMenu(index, anchor) {
   anchor.setAttribute('aria-expanded', 'true');
   elements.shortcutEditAction.textContent = item.type === 'group' ? '重命名文件夹' : '编辑快捷方式';
   elements.shortcutDeleteAction.textContent = item.type === 'group' ? '删除文件夹' : '删除快捷方式';
+  const page = Math.floor(index / getShortcutPageSize());
+  elements.shortcutMovePrevAction.hidden = page <= 0;
+  elements.shortcutMoveNextAction.hidden = page >= getShortcutPageCount() - 1;
   elements.shortcutSettingsMenu.hidden = false;
 
   const rect = anchor.getBoundingClientRect();
@@ -973,6 +1249,78 @@ function createMenuButton(index, item) {
   return button;
 }
 
+async function moveShortcutToAdjacentPage(direction) {
+  const index = activeShortcutMenuIndex;
+  if (!state.shortcuts[index] || ![-1, 1].includes(direction)) return;
+  const pageSize = getShortcutPageSize();
+  const currentPage = Math.floor(index / pageSize);
+  const targetPage = currentPage + direction;
+  if (targetPage < 0 || targetPage >= getShortcutPageCount()) return;
+  closeShortcutSettingsMenu();
+  const [item] = state.shortcuts.splice(index, 1);
+  const targetStart = targetPage * pageSize;
+  const insertIndex = direction < 0
+    ? Math.min(targetStart + pageSize - 1, state.shortcuts.length)
+    : Math.min(targetStart, state.shortcuts.length);
+  state.shortcuts.splice(insertIndex, 0, item);
+  shortcutsPage = targetPage;
+  await storageSet({ shortcuts: state.shortcuts });
+  renderShortcuts();
+}
+
+let shortcutSelectionMode = false;
+const selectedShortcutIndexes = new Set();
+
+function updateShortcutSelectionUi() {
+  const count = selectedShortcutIndexes.size;
+  elements.shortcutSelectionBar.hidden = !shortcutSelectionMode;
+  elements.shortcutSelectionCount.textContent = `已选择 ${count} 项`;
+  elements.deleteSelectedShortcuts.disabled = count === 0;
+  elements.manageShortcutsButton.hidden = shortcutSelectionMode || state.shortcuts.length === 0;
+}
+
+function setShortcutSelectionMode(enabled) {
+  shortcutSelectionMode = Boolean(enabled);
+  selectedShortcutIndexes.clear();
+  document.body.classList.toggle('shortcut-selection-mode', shortcutSelectionMode);
+  renderShortcuts();
+  updateShortcutSelectionUi();
+}
+
+function toggleShortcutSelection(index) {
+  if (selectedShortcutIndexes.has(index)) selectedShortcutIndexes.delete(index);
+  else selectedShortcutIndexes.add(index);
+  renderShortcuts();
+  updateShortcutSelectionUi();
+}
+
+function enableShortcutSelection(tile, index) {
+  tile.draggable = !shortcutSelectionMode;
+  if (!shortcutSelectionMode) return;
+  tile.classList.add('selectable');
+  if (selectedShortcutIndexes.has(index)) tile.classList.add('selected');
+  const check = document.createElement('span');
+  check.className = 'shortcut-selection-check';
+  check.textContent = selectedShortcutIndexes.has(index) ? '✓' : '';
+  tile.append(check);
+  tile.addEventListener('click', (event) => {
+    if (event.target.closest('.shortcut-menu')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    toggleShortcutSelection(index);
+  }, true);
+}
+
+async function deleteSelectedShortcuts() {
+  const indexes = [...selectedShortcutIndexes].sort((a, b) => b - a);
+  if (!indexes.length) return;
+  if (indexes.includes(activeGroupIndex) && elements.shortcutGroupDialog.open) elements.shortcutGroupDialog.close();
+  indexes.forEach((index) => state.shortcuts.splice(index, 1));
+  activeGroupIndex = -1;
+  await storageSet({ shortcuts: state.shortcuts });
+  setShortcutSelectionMode(false);
+}
+
 function createLinkShortcut(shortcut, index) {
   const tile = document.createElement('div');
   tile.className = 'shortcut shortcut-tile';
@@ -990,6 +1338,7 @@ function createLinkShortcut(shortcut, index) {
   title.textContent = shortcut.name;
   link.append(title);
   tile.append(link, createMenuButton(index, shortcut));
+  enableShortcutSelection(tile, index);
   return tile;
 }
 
@@ -1009,6 +1358,22 @@ let activeGroupIndex = -1;
 
 let activeGroupItemRef = null; // { groupIndex, itemIndex }：文件夹内三点菜单当前指向的条目
 let activeGroupItemMenuButton = null;
+
+function pruneEmptyShortcutGroups() {
+  let removedActiveGroup = false;
+  for (let index = state.shortcuts.length - 1; index >= 0; index -= 1) {
+    const item = state.shortcuts[index];
+    if (item?.type !== 'group' || item.items.length) continue;
+    if (index === activeGroupIndex) removedActiveGroup = true;
+    state.shortcuts.splice(index, 1);
+    if (index < activeGroupIndex) activeGroupIndex -= 1;
+  }
+  if (removedActiveGroup) {
+    closeGroupItemMenu();
+    elements.shortcutGroupDialog.close();
+    activeGroupIndex = -1;
+  }
+}
 
 function closeGroupItemMenu() {
   elements.groupItemSettingsMenu.hidden = true;
@@ -1040,6 +1405,7 @@ function openGroupItemMenu(itemIndex, anchor) {
 
 async function commitGroupItemChange() {
   closeGroupItemMenu();
+  pruneEmptyShortcutGroups();
   await storageSet({ shortcuts: state.shortcuts });
   renderShortcuts();
   if (elements.shortcutGroupDialog.open) renderGroupDialog();
@@ -1128,6 +1494,7 @@ function createShortcutGroup(group, index) {
   button.append(title);
   button.addEventListener('click', () => openShortcutGroup(index));
   tile.append(button, createMenuButton(index, group));
+  enableShortcutSelection(tile, index);
   return tile;
 }
 
@@ -1149,8 +1516,18 @@ function createAddShortcut() {
 
 let shortcutsPage = 0;
 
+function getShortcutPageSize() {
+  const gridWidth = elements.shortcuts.clientWidth || Math.max(288, window.innerWidth - 32);
+  const cardWidth = window.innerWidth <= 620 ? SHORTCUT_COMPACT_WIDTH : SHORTCUT_DESKTOP_WIDTH;
+  const columns = Math.max(3, Math.floor((gridWidth + SHORTCUT_GAP) / (cardWidth + SHORTCUT_GAP)));
+  const responsiveRows = window.innerHeight >= 820 ? 3 : window.innerHeight >= 640 ? 2 : 1;
+  const configuredRows = [0, 1, 2, 3].includes(Number(state.customization.shortcutRows)) ? Number(state.customization.shortcutRows) : 3;
+  const rows = Math.min(responsiveRows, configuredRows);
+  return Math.max(2, columns * rows - (shortcutSelectionMode ? 0 : 1));
+}
+
 function getShortcutPageCount() {
-  return Math.max(1, Math.ceil(state.shortcuts.length / SHORTCUT_PAGE_SIZE));
+  return Math.max(1, Math.ceil(state.shortcuts.length / getShortcutPageSize()));
 }
 
 function renderShortcutPagination() {
@@ -1164,27 +1541,39 @@ function renderShortcutPagination() {
   nav.hidden = false;
   nav.replaceChildren();
 
-  const prev = document.createElement('button');
-  prev.type = 'button';
-  prev.className = 'shortcut-page-button';
-  prev.textContent = '‹';
-  prev.setAttribute('aria-label', '上一页');
-  prev.disabled = shortcutsPage === 0;
-  prev.addEventListener('click', () => setShortcutsPage(shortcutsPage - 1));
+  const previous = document.createElement('button');
+  previous.type = 'button';
+  previous.className = 'shortcut-page-arrow';
+  previous.setAttribute('aria-label', '上一页');
+  previous.title = '上一页';
+  previous.disabled = shortcutsPage === 0;
+  previous.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15.4 5.4-1.4-1.4-8 8 8 8 1.4-1.4L8.8 12l6.6-6.6Z"/></svg>';
+  previous.addEventListener('click', () => turnShortcutsPage(-1));
 
-  const label = document.createElement('span');
-  label.className = 'shortcut-page-label';
-  label.textContent = `${shortcutsPage + 1} / ${totalPages}`;
+  const dots = document.createElement('span');
+  dots.className = 'shortcut-page-dots';
+
+  for (let page = 0; page < totalPages; page += 1) {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'shortcut-page-dot';
+    dot.setAttribute('aria-label', `跳转到第 ${page + 1} 页，共 ${totalPages} 页`);
+    dot.setAttribute('aria-current', page === shortcutsPage ? 'page' : 'false');
+    dot.title = `第 ${page + 1} 页`;
+    dot.addEventListener('click', () => setShortcutsPage(page));
+    dots.append(dot);
+  }
 
   const next = document.createElement('button');
   next.type = 'button';
-  next.className = 'shortcut-page-button';
-  next.textContent = '›';
+  next.className = 'shortcut-page-arrow';
   next.setAttribute('aria-label', '下一页');
+  next.title = '下一页';
   next.disabled = shortcutsPage >= totalPages - 1;
-  next.addEventListener('click', () => setShortcutsPage(shortcutsPage + 1));
+  next.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8.6 18.6 1.4 1.4 8-8-8-8-1.4 1.4 6.6 6.6-6.6 6.6Z"/></svg>';
+  next.addEventListener('click', () => turnShortcutsPage(1));
 
-  nav.append(prev, label, next);
+  nav.append(previous, dots, next);
 }
 
 function setShortcutsPage(page) {
@@ -1194,14 +1583,32 @@ function setShortcutsPage(page) {
 
 function renderShortcuts() {
   closeShortcutSettingsMenu();
+  const shortcutsHidden = Number(state.customization.shortcutRows) === 0;
+  elements.shortcuts.hidden = shortcutsHidden;
+  elements.manageShortcutsButton.hidden = shortcutsHidden;
+  if (shortcutsHidden) {
+    elements.shortcuts.replaceChildren();
+    elements.shortcutPagination.hidden = true;
+    elements.shortcutPagination.replaceChildren();
+    if (shortcutSelectionMode) setShortcutSelectionMode(false);
+    return;
+  }
+  const pageSize = getShortcutPageSize();
+  renderedShortcutPageSize = pageSize;
   shortcutsPage = Math.max(0, Math.min(shortcutsPage, getShortcutPageCount() - 1));
   elements.shortcuts.replaceChildren();
-  const start = shortcutsPage * SHORTCUT_PAGE_SIZE;
-  state.shortcuts.slice(start, start + SHORTCUT_PAGE_SIZE).forEach((shortcut, offset) => {
+  const start = shortcutsPage * pageSize;
+  state.shortcuts.slice(start, start + pageSize).forEach((shortcut, offset) => {
     elements.shortcuts.append(createShortcut(shortcut, start + offset));
   });
-  elements.shortcuts.append(createAddShortcut());
+  if (!shortcutSelectionMode) elements.shortcuts.append(createAddShortcut());
   renderShortcutPagination();
+  updateShortcutSelectionUi();
+}
+
+function turnShortcutsPage(direction) {
+  if (![-1, 1].includes(direction) || getShortcutPageCount() <= 1) return;
+  setShortcutsPage(shortcutsPage + direction);
 }
 
 let cachedBookmarks = null;
@@ -1230,24 +1637,14 @@ function createBookmarkIcon(bookmark) {
   const icon = document.createElement('span');
   icon.className = 'bookmark-option-icon';
   icon.textContent = bookmark.name.trim().charAt(0).toUpperCase() || '?';
-
-  const faviconUrl = getFaviconUrl(bookmark.url);
-  if (faviconUrl) {
-    const image = document.createElement('img');
-    image.src = faviconUrl;
-    image.alt = '';
-    image.addEventListener('load', () => {
-      icon.textContent = '';
-      icon.append(image);
-    }, { once: true });
-  }
+  attachResolvedFavicon(icon, bookmark.url);
   return icon;
 }
 
 function selectBookmark(bookmark) {
   elements.shortcutName.value = bookmark.name.slice(0, 32);
   elements.shortcutUrl.value = bookmark.url;
-  setBookmarkPickerOpen(false);
+  setAddShortcutTab('custom');
   elements.shortcutName.focus();
 }
 
@@ -1315,18 +1712,250 @@ function setBookmarkPickerOpen(open) {
   const picker = document.querySelector('#bookmark-picker');
   const button = document.querySelector('#bookmark-picker-button');
   picker.hidden = !open;
-  button.setAttribute('aria-expanded', String(open));
+  button.setAttribute('aria-selected', String(open));
   if (open) {
+    elements.resourcePicker.hidden = true;
+    elements.resourcePickerButton.setAttribute('aria-selected', 'false');
     loadBookmarks();
     requestAnimationFrame(() => document.querySelector('#bookmark-search').focus());
   }
 }
+
+let selectedResourceCategory = '全部';
+const selectedResourceIds = new Set();
+let resourceIconObserver;
+let editingResourceId = '';
+
+function getEffectiveResource(resource) {
+  return { ...resource, url: state.resourceOverrides[resource.url] || resource.url };
+}
+
+function getShortcutUrlKeys() {
+  const urls = new Set();
+  state.shortcuts.forEach((item) => {
+    if (item.type === 'group') item.items.forEach((child) => urls.add(new URL(child.url).href));
+    else urls.add(new URL(item.url).href);
+  });
+  return urls;
+}
+
+function createLazyResourceIcon(resource) {
+  const icon = document.createElement('span');
+  icon.className = 'resource-card-icon';
+  icon.textContent = resource.name.trim().charAt(0).toUpperCase() || '?';
+  icon.dataset.pageUrl = resource.url;
+  if (!('IntersectionObserver' in window)) {
+    attachResolvedFavicon(icon, resource.url);
+    return icon;
+  }
+  resourceIconObserver ??= new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      resourceIconObserver.unobserve(entry.target);
+      attachResolvedFavicon(entry.target, entry.target.dataset.pageUrl);
+    });
+  }, { root: elements.resourceList, rootMargin: '100px' });
+  resourceIconObserver.observe(icon);
+  return icon;
+}
+
+function updateResourceSelectionUi() {
+  const count = selectedResourceIds.size;
+  elements.resourceSelectionCount.textContent = `已选择 ${count} 个`;
+  elements.resourceAddSelected.textContent = count ? `添加已选（${count}）` : '添加已选';
+  elements.resourceAddSelected.disabled = count === 0;
+}
+
+function populateResourceDestinations() {
+  const previous = elements.resourceDestination.value || 'root';
+  const options = [new Option('主页', 'root')];
+  state.shortcuts.forEach((item, index) => {
+    if (item.type === 'group') options.push(new Option(item.name, `group:${index}`));
+  });
+  elements.resourceDestination.replaceChildren(...options);
+  elements.resourceDestination.value = options.some((option) => option.value === previous) ? previous : 'root';
+}
+
+function renderResourceCategories() {
+  const preferredOrder = ['AI', '办公', '开发', '影音', '社区', '购物', '工具'];
+  const available = new Set(SHORTCUT_LIBRARY.map((item) => item.category));
+  const categories = ['全部', ...preferredOrder.filter((category) => available.has(category))];
+  elements.resourceCategories.replaceChildren(...categories.map((category) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'resource-category';
+    button.textContent = category;
+    button.setAttribute('aria-pressed', String(category === selectedResourceCategory));
+    button.addEventListener('click', () => {
+      selectedResourceCategory = category;
+      renderResourceCategories();
+      renderResourceOptions(elements.resourceSearch.value);
+    });
+    return button;
+  }));
+}
+
+function renderResourceOptions(query = '') {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const matches = SHORTCUT_LIBRARY.map((resource) => ({ ...getEffectiveResource(resource), resourceId: resource.url })).filter((resource) => {
+    const categoryMatches = selectedResourceCategory === '全部' || resource.category === selectedResourceCategory;
+    const searchable = `${resource.name} ${resource.url} ${resource.category}`.toLocaleLowerCase();
+    return categoryMatches && searchable.includes(normalizedQuery);
+  }).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN-u-co-pinyin', { sensitivity: 'base', numeric: true }));
+
+  resourceIconObserver?.disconnect();
+  resourceIconObserver = null;
+  const existingUrls = getShortcutUrlKeys();
+  elements.resourceList.replaceChildren(...matches.map((resource) => {
+    const urlKey = new URL(resource.url).href;
+    const resourceId = resource.resourceId;
+    const alreadyAdded = existingUrls.has(urlKey);
+    const selected = selectedResourceIds.has(resourceId);
+    const card = document.createElement('div');
+    card.className = `resource-card${selected ? ' selected' : ''}${alreadyAdded ? ' already-added' : ''}`;
+    card.setAttribute('role', 'option');
+    card.setAttribute('aria-selected', String(selected));
+
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'resource-card-main';
+    option.disabled = alreadyAdded;
+    option.append(createLazyResourceIcon(resource));
+
+    const title = document.createElement('span');
+    title.className = 'resource-card-title';
+    title.textContent = resource.name;
+    const category = document.createElement('span');
+    category.className = 'resource-card-category';
+    category.textContent = alreadyAdded ? '已添加' : resource.category;
+    const url = document.createElement('span');
+    url.className = 'resource-card-url';
+    url.textContent = resource.url;
+    url.title = resource.url;
+    const check = document.createElement('span');
+    check.className = 'resource-card-check';
+    check.textContent = selected ? '✓' : '';
+    option.append(title, category, url, check);
+    option.addEventListener('click', () => {
+      if (selectedResourceIds.has(resourceId)) selectedResourceIds.delete(resourceId);
+      else selectedResourceIds.add(resourceId);
+      renderResourceOptions(elements.resourceSearch.value);
+      updateResourceSelectionUi();
+    });
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'resource-card-edit';
+    edit.textContent = '编辑 URL';
+    edit.setAttribute('aria-label', `编辑 ${resource.name} 的网址`);
+    edit.addEventListener('click', () => openResourceUrlDialog(resourceId));
+    card.append(option, edit);
+    return card;
+  }));
+  elements.resourceStatus.textContent = matches.length ? `找到 ${matches.length} 个网站，可多选添加 · 按名称 A–Z` : '没有找到匹配的网站';
+  updateResourceSelectionUi();
+}
+
+async function addSelectedLibraryResources() {
+  const existingUrls = getShortcutUrlKeys();
+  const additions = SHORTCUT_LIBRARY
+    .filter((resource) => selectedResourceIds.has(resource.url))
+    .map(getEffectiveResource)
+    .filter((resource) => !existingUrls.has(new URL(resource.url).href))
+    .map((resource) => ({ name: resource.name, url: resource.url }));
+  if (!additions.length) return;
+
+  const destination = elements.resourceDestination.value;
+  if (destination === 'root') {
+    state.shortcuts.push(...additions);
+  } else {
+    const groupIndex = Number(destination.replace('group:', ''));
+    const group = state.shortcuts[groupIndex];
+    if (!group || group.type !== 'group') return;
+    group.items.push(...additions);
+  }
+  await storageSet({ shortcuts: state.shortcuts });
+  selectedResourceIds.clear();
+  renderShortcuts();
+  populateResourceDestinations();
+  renderResourceOptions(elements.resourceSearch.value);
+  elements.resourceStatus.textContent = `已添加 ${additions.length} 个网站`;
+}
+
+function setResourcePickerOpen(open) {
+  elements.resourcePicker.hidden = !open;
+  elements.resourcePickerButton.setAttribute('aria-selected', String(open));
+  if (!open) {
+    resourceIconObserver?.disconnect();
+    resourceIconObserver = null;
+    return;
+  }
+  document.querySelector('#bookmark-picker').hidden = true;
+  elements.resourcePickerButton.setAttribute('aria-selected', 'true');
+  document.querySelector('#bookmark-picker-button').setAttribute('aria-selected', 'false');
+  selectedResourceIds.clear();
+  populateResourceDestinations();
+  renderResourceCategories();
+  renderResourceOptions(elements.resourceSearch.value);
+  requestAnimationFrame(() => elements.resourceSearch.focus());
+}
+
+function setAddShortcutTab(tab) {
+  const library = tab === 'library';
+  elements.shortcutLibraryPanel.hidden = !library;
+  elements.shortcutCustomPanel.hidden = library;
+  elements.shortcutTabLibrary.setAttribute('aria-selected', String(library));
+  elements.shortcutTabCustom.setAttribute('aria-selected', String(!library));
+  elements.shortcutDialog.classList.toggle('resource-library-open', library);
+  elements.shortcutDialog.classList.toggle('shortcut-custom-open', !library);
+  if (library) setResourcePickerOpen(true);
+  else resourceIconObserver?.disconnect();
+}
+
+function openResourceUrlDialog(resourceId) {
+  const resource = SHORTCUT_LIBRARY.find((item) => item.url === resourceId);
+  if (!resource) return;
+  editingResourceId = resourceId;
+  elements.resourceUrlName.textContent = resource.name;
+  elements.resourceDefaultUrl.value = resourceId;
+  elements.resourceUrlInput.value = state.resourceOverrides[resourceId] || resourceId;
+  elements.resourceUrlError.textContent = '';
+  elements.resourceUrlDialog.showModal();
+  requestAnimationFrame(() => elements.resourceUrlInput.focus());
+}
+
+async function saveResourceUrlOverride(event) {
+  event.preventDefault();
+  const resource = SHORTCUT_LIBRARY.find((item) => item.url === editingResourceId);
+  if (!resource) return;
+  try {
+    const url = normalizeUrl(elements.resourceUrlInput.value);
+    state.resourceOverrides[editingResourceId] = url;
+    selectedResourceIds.delete(editingResourceId);
+    await storageSet({ resourceOverrides: state.resourceOverrides });
+    elements.resourceUrlDialog.close();
+    renderResourceOptions(elements.resourceSearch.value);
+  } catch {
+    elements.resourceUrlError.textContent = '请输入有效的 HTTP 或 HTTPS 网址';
+  }
+}
+
+async function resetResourceUrlOverride() {
+  if (!editingResourceId) return;
+  delete state.resourceOverrides[editingResourceId];
+  selectedResourceIds.delete(editingResourceId);
+  await storageSet({ resourceOverrides: state.resourceOverrides });
+  elements.resourceUrlDialog.close();
+  renderResourceOptions(elements.resourceSearch.value);
+}
+
+let pendingNewGroupName = '';
 
 function populateShortcutDestinations(selected = 'root') {
   const options = [new Option('主页', 'root')];
   state.shortcuts.forEach((item, index) => {
     if (item.type === 'group') options.push(new Option(item.name, `group:${index}`));
   });
+  if (pendingNewGroupName) options.push(new Option(`${pendingNewGroupName}（新建）`, 'new-group'));
   elements.shortcutDestination.replaceChildren(...options);
   elements.shortcutDestination.value = options.some((option) => option.value === selected) ? selected : 'root';
 }
@@ -1347,7 +1976,9 @@ let draggingShortcutIndex = -1;
 let draggingGroupItem = null; // { groupIndex, itemIndex }：正在从分组弹窗里拖出的条目
 
 function clearDropHighlights() {
-  elements.shortcuts.querySelectorAll('.drop-hover').forEach((el) => el.classList.remove('drop-hover'));
+  elements.shortcuts.querySelectorAll('.drop-hover, .drop-before, .drop-after').forEach((el) => {
+    el.classList.remove('drop-hover', 'drop-before', 'drop-after');
+  });
   elements.shortcuts.classList.remove('drop-append');
 }
 
@@ -1377,6 +2008,7 @@ async function handleGroupItemDrop(targetIndex) {
     state.shortcuts.push(item);
   }
 
+  pruneEmptyShortcutGroups();
   await storageSet({ shortcuts: state.shortcuts });
   renderShortcuts();
   if (elements.shortcutGroupDialog.open) renderGroupDialog();
@@ -1393,25 +2025,41 @@ function canDropShortcut(sourceIndex, targetIndex) {
   const source = state.shortcuts[sourceIndex];
   const target = state.shortcuts[targetIndex];
   if (!source || !target) return false;
-  return source.type !== 'group'; // 文件夹本身不参与拖拽合并，避免嵌套
+  return Boolean(source && target);
 }
 
-async function handleShortcutDrop(sourceIndex, targetIndex) {
+function getShortcutDropMode(event, sourceIndex, targetIndex) {
+  const source = state.shortcuts[sourceIndex];
+  const tile = event.target.closest('.shortcut-tile');
+  if (!source || !tile) return 'after';
+  const rect = tile.getBoundingClientRect();
+  const position = (event.clientX - rect.left) / Math.max(1, rect.width);
+  if (source.type !== 'group' && position >= .3 && position <= .7) return 'group';
+  return position < .5 ? 'before' : 'after';
+}
+
+async function handleShortcutDrop(sourceIndex, targetIndex, mode) {
   const source = state.shortcuts[sourceIndex];
   const target = state.shortcuts[targetIndex];
   if (!source || !target) return;
 
-  if (target.type === 'group') {
+  if (mode === 'group' && source.type !== 'group' && target.type === 'group') {
     // 拖到文件夹上：收入该文件夹
     state.shortcuts.splice(sourceIndex, 1);
     target.items.push(source);
-  } else {
+  } else if (mode === 'group' && source.type !== 'group' && target.type !== 'group') {
     // 图标拖到图标上：原地创建文件夹
     const folder = { type: 'group', id: createGroupId(), name: uniqueGroupName(), items: [target, source] };
     const insertIndex = Math.min(sourceIndex, targetIndex);
     state.shortcuts.splice(Math.max(sourceIndex, targetIndex), 1);
     state.shortcuts.splice(Math.min(sourceIndex, targetIndex), 1);
     state.shortcuts.splice(insertIndex, 0, folder);
+  } else {
+    // 拖到卡片左右边缘：调整主页顺序；文件夹也可参与排序，但不会发生嵌套。
+    state.shortcuts.splice(sourceIndex, 1);
+    let insertionIndex = state.shortcuts.indexOf(target);
+    if (mode === 'after') insertionIndex += 1;
+    state.shortcuts.splice(insertionIndex, 0, source);
   }
 
   await storageSet({ shortcuts: state.shortcuts });
@@ -1428,7 +2076,7 @@ elements.shortcuts.addEventListener('dragstart', (event) => {
 });
 elements.shortcuts.addEventListener('dragend', (event) => {
   event.target.closest('.shortcut-tile')?.classList.remove('dragging');
-  elements.shortcuts.querySelectorAll('.drop-hover').forEach((el) => el.classList.remove('drop-hover'));
+  clearDropHighlights();
   draggingShortcutIndex = -1;
 });
 elements.shortcuts.addEventListener('dragover', (event) => {
@@ -1450,10 +2098,9 @@ elements.shortcuts.addEventListener('dragover', (event) => {
   event.preventDefault();
   event.dataTransfer.dropEffect = 'move';
   const tile = event.target.closest('.shortcut-tile');
-  elements.shortcuts.querySelectorAll('.drop-hover').forEach((el) => {
-    if (el !== tile) el.classList.remove('drop-hover');
-  });
-  tile.classList.add('drop-hover');
+  clearDropHighlights();
+  const mode = getShortcutDropMode(event, draggingShortcutIndex, targetIndex);
+  tile.classList.add(mode === 'group' ? 'drop-hover' : `drop-${mode}`);
 });
 elements.shortcuts.addEventListener('drop', (event) => {
   if (draggingGroupItem) {
@@ -1474,8 +2121,10 @@ elements.shortcuts.addEventListener('drop', (event) => {
   if (!canDropShortcut(draggingShortcutIndex, targetIndex)) return;
   event.preventDefault();
   const sourceIndex = draggingShortcutIndex;
+  const mode = getShortcutDropMode(event, sourceIndex, targetIndex);
   draggingShortcutIndex = -1;
-  handleShortcutDrop(sourceIndex, targetIndex);
+  clearDropHighlights();
+  handleShortcutDrop(sourceIndex, targetIndex, mode);
 });
 
 // 分组弹窗内部：拖到另一个条目上 = 调整顺序
@@ -1534,12 +2183,8 @@ async function createNewShortcutGroup() {
     return;
   }
 
-  const group = { type: 'group', id: createGroupId(), name, items: [] };
-  state.shortcuts.push(group);
-  await storageSet({ shortcuts: state.shortcuts });
-  renderShortcuts();
-  const groupIndex = state.shortcuts.length - 1;
-  populateShortcutDestinations(`group:${groupIndex}`);
+  pendingNewGroupName = name;
+  populateShortcutDestinations('new-group');
   elements.newGroupName.value = '';
   elements.newGroupPanel.hidden = true;
   elements.shortcutError.textContent = '';
@@ -1547,12 +2192,12 @@ async function createNewShortcutGroup() {
 
 function openShortcutDialog(destination = 'root', editIndex = -1) {
   const search = document.querySelector('#bookmark-search');
-  const bookmarkButton = document.querySelector('#bookmark-picker-button');
   const destinationLabel = elements.shortcutDestination.closest('label');
   const item = Number.isInteger(editIndex) ? state.shortcuts[editIndex] : null;
   editingShortcutIndex = item ? editIndex : -1;
 
   elements.shortcutForm.reset();
+  pendingNewGroupName = '';
   elements.shortcutDialogTitle.textContent = '添加快捷方式';
   elements.shortcutError.textContent = '';
   elements.newGroupPanel.hidden = true;
@@ -1565,11 +2210,14 @@ function openShortcutDialog(destination = 'root', editIndex = -1) {
   elements.shortcutIconFile.value = '';
   pendingIconFileData = item?.icon?.type === 'file' ? item.icon.value : '';
   destinationLabel.hidden = false;
-  bookmarkButton.hidden = false;
+  elements.shortcutLocationSection.hidden = false;
+  elements.shortcutMainTabs.hidden = false;
   populateShortcutDestinations(destination);
   document.querySelector('#bookmark-list').replaceChildren();
   document.querySelector('#bookmark-status').textContent = '';
-  setBookmarkPickerOpen(false);
+  elements.resourceSearch.value = '';
+  selectedResourceCategory = '全部';
+  selectedResourceIds.clear();
 
   if (item?.type === 'group') {
     elements.shortcutDialogTitle.textContent = '重命名文件夹';
@@ -1578,7 +2226,10 @@ function openShortcutDialog(destination = 'root', editIndex = -1) {
     elements.shortcutUrlLabel.hidden = true;
     elements.shortcutIconSettings.hidden = true;
     destinationLabel.hidden = true;
-    bookmarkButton.hidden = true;
+    elements.shortcutLocationSection.hidden = true;
+    elements.shortcutMainTabs.hidden = true;
+    elements.shortcutLibraryPanel.hidden = true;
+    elements.shortcutCustomPanel.hidden = false;
   } else if (item) {
     elements.shortcutDialogTitle.textContent = '编辑快捷方式';
     elements.shortcutName.value = item.name;
@@ -1586,10 +2237,16 @@ function openShortcutDialog(destination = 'root', editIndex = -1) {
   }
 
   updateShortcutIconFields();
-  bookmarkButton.onclick = () => setBookmarkPickerOpen(document.querySelector('#bookmark-picker').hidden);
+  elements.shortcutTabLibrary.onclick = () => setAddShortcutTab('library');
+  elements.shortcutTabCustom.onclick = () => setAddShortcutTab('custom');
+  document.querySelector('#bookmark-picker-button').onclick = () => setBookmarkPickerOpen(true);
+  elements.resourcePickerButton.onclick = () => setResourcePickerOpen(true);
   search.oninput = () => renderBookmarkOptions(search.value);
+  elements.resourceSearch.oninput = () => renderResourceOptions(elements.resourceSearch.value);
+  if (item) setAddShortcutTab('custom');
+  else setAddShortcutTab('library');
   elements.shortcutDialog.showModal();
-  requestAnimationFrame(() => elements.shortcutName.focus());
+  if (item) requestAnimationFrame(() => elements.shortcutName.focus());
 }
 
 function applyCustomization() {
@@ -1702,6 +2359,8 @@ function populateCustomizationForm() {
   if (selectedEngine) selectedEngine.value = state.searchEngine;
   const selectedWallpaper = elements.customizeForm.elements.namedItem('wallpaper');
   if (selectedWallpaper) selectedWallpaper.value = state.customization.wallpaper?.mode || 'none';
+  const selectedRows = elements.customizeForm.elements.namedItem('shortcutRows');
+  if (selectedRows) selectedRows.value = String([0, 1, 2, 3].includes(Number(state.customization.shortcutRows)) ? Number(state.customization.shortcutRows) : 3);
   if (elements.wallpaperRotate) elements.wallpaperRotate.value = state.customization.wallpaper?.rotate || 'day';
   elements.wallpaperFile.value = '';
   updateWallpaperFormVisibility();
@@ -1746,6 +2405,7 @@ function normalizeShortcutEntry(item) {
       })
       .filter((child) => child.name && /^https?:\/\//i.test(child.url))
       : [];
+    if (!items.length) return null;
     return { type: 'group', id: item.id || createGroupId(), name, items };
   }
   if (typeof item.url !== 'string' || !/^https?:\/\//i.test(item.url)) return null;
@@ -1754,18 +2414,23 @@ function normalizeShortcutEntry(item) {
 }
 
 async function initialize() {
-  const stored = await storageGet(['searchEngine', 'searchHistory', 'shortcuts', 'customization', 'iconSourceCache']);
+  const stored = await storageGet(['searchEngine', 'searchHistory', 'shortcuts', 'customization', 'iconSourceCache', 'resourceOverrides']);
   state.searchEngine = SEARCH_ENGINES[stored.searchEngine] ? stored.searchEngine : 'google';
   state.searchHistory = Array.isArray(stored.searchHistory) ? stored.searchHistory
     .filter((item) => typeof item?.query === 'string' && SEARCH_ENGINES[item.engine])
     .slice(0, 10) : [];
   hydrateResolvedIconCache(stored.iconSourceCache);
+  state.resourceOverrides = stored.resourceOverrides && typeof stored.resourceOverrides === 'object' ? stored.resourceOverrides : {};
   const shortcutSource = Array.isArray(stored.shortcuts) ? stored.shortcuts : await loadTopSites();
   state.shortcuts = shortcutSource.map(normalizeShortcutEntry).filter(Boolean);
+  if (Array.isArray(stored.shortcuts) && state.shortcuts.length !== stored.shortcuts.length) {
+    await storageSet({ shortcuts: state.shortcuts });
+  }
   state.customization = {
     ...state.customization,
     ...(stored.customization || {})
   };
+  state.customization.shortcutRows = [0, 1, 2, 3].includes(Number(state.customization.shortcutRows)) ? Number(state.customization.shortcutRows) : 3;
   if (state.customization.theme === 'system') {
     // 旧版本兼容：跟随系统已移除，按系统当前主题固化
     state.customization.theme = globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -1785,8 +2450,16 @@ elements.searchForm.addEventListener('submit', async (event) => {
 });
 
 elements.shortcutEditAction.addEventListener('click', editShortcutFromSettings);
+elements.shortcutMovePrevAction.addEventListener('click', () => moveShortcutToAdjacentPage(-1));
+elements.shortcutMoveNextAction.addEventListener('click', () => moveShortcutToAdjacentPage(1));
 elements.shortcutDeleteAction.addEventListener('click', deleteShortcutFromSettings);
 elements.shortcutIconMode.addEventListener('change', updateShortcutIconFields);
+elements.resourceAddSelected.addEventListener('click', addSelectedLibraryResources);
+elements.resourceUrlForm.addEventListener('submit', saveResourceUrlOverride);
+elements.resourceUrlReset.addEventListener('click', resetResourceUrlOverride);
+elements.manageShortcutsButton.addEventListener('click', () => setShortcutSelectionMode(true));
+elements.cancelShortcutSelection.addEventListener('click', () => setShortcutSelectionMode(false));
+elements.deleteSelectedShortcuts.addEventListener('click', deleteSelectedShortcuts);
 elements.shortcutIconUrl.addEventListener('input', renderShortcutIconPreview);
 elements.shortcutName.addEventListener('input', renderShortcutIconPreview);
 elements.shortcutUrl.addEventListener('input', renderShortcutIconPreview);
@@ -1801,7 +2474,7 @@ elements.shortcutIconFile.addEventListener('change', async () => {
   }
 });
 elements.shortcutSettingsMenu.addEventListener('keydown', (event) => {
-  const actions = [...elements.shortcutSettingsMenu.querySelectorAll('[role="menuitem"]')];
+  const actions = [...elements.shortcutSettingsMenu.querySelectorAll('[role="menuitem"]')].filter((action) => !action.hidden);
   if (event.key === 'Escape') {
     const anchor = activeShortcutMenuButton;
     closeShortcutSettingsMenu();
@@ -1813,7 +2486,16 @@ elements.shortcutSettingsMenu.addEventListener('keydown', (event) => {
     actions[nextIndex].focus();
   }
 });
-window.addEventListener('resize', closeShortcutSettingsMenu);
+let shortcutResizeTimer;
+let renderedShortcutPageSize = 0;
+window.addEventListener('resize', () => {
+  closeShortcutSettingsMenu();
+  clearTimeout(shortcutResizeTimer);
+  shortcutResizeTimer = setTimeout(() => {
+    const nextPageSize = getShortcutPageSize();
+    if (nextPageSize !== renderedShortcutPageSize) renderShortcuts();
+  }, 120);
+});
 window.addEventListener('scroll', closeShortcutSettingsMenu, true);
 
 elements.showNewGroup.addEventListener('click', () => {
@@ -1861,6 +2543,12 @@ elements.shortcutForm.addEventListener('submit', async (event) => {
     if (destination === 'root') {
       if (isEditingLink) state.shortcuts[editingShortcutIndex] = shortcut;
       else state.shortcuts.push(shortcut);
+    } else if (destination === 'new-group') {
+      if (!pendingNewGroupName) throw new Error('请输入文件夹名称');
+      const group = { type: 'group', id: createGroupId(), name: pendingNewGroupName, items: [shortcut] };
+      state.shortcuts.push(group);
+      if (isEditingLink) state.shortcuts.splice(editingShortcutIndex, 1);
+      destinationGroupIndex = state.shortcuts.indexOf(group);
     } else {
       const requestedGroupIndex = Number(destination.replace('group:', ''));
       const group = state.shortcuts[requestedGroupIndex];
@@ -1935,9 +2623,13 @@ elements.customizeForm.addEventListener('submit', async (event) => {
   }
   state.customization = {
     theme: elements.customizeForm.elements.namedItem('theme').value,
-    wallpaper
+    wallpaper,
+    shortcutRows: [0, 1, 2, 3].includes(Number(elements.customizeForm.elements.namedItem('shortcutRows')?.value))
+      ? Number(elements.customizeForm.elements.namedItem('shortcutRows').value)
+      : 3
   };
   applyCustomization();
+  renderShortcuts();
   await storageSet({ customization: state.customization });
   if (wallpaperMode === 'bing' && !await refreshBingWallpaper()) {
     state.customization = previousCustomization.wallpaper?.mode === 'bing' && !previousCustomization.wallpaper.image
@@ -1958,14 +2650,21 @@ elements.customizeForm.elements.namedItem('wallpaper')?.forEach?.((radio) => {
 });
 
 elements.resetCustomization.addEventListener('click', async () => {
-  state.customization = { theme: 'light', wallpaper: { mode: 'none', image: '' } };
+  state.customization = { theme: 'light', wallpaper: { mode: 'none', image: '' }, shortcutRows: 3 };
   applyCustomization();
+  renderShortcuts();
   populateCustomizationForm();
   await storageSet({ customization: state.customization });
 });
 
 document.querySelectorAll('[data-close]').forEach((button) => {
   button.addEventListener('click', () => document.querySelector(`#${button.dataset.close}`).close());
+});
+
+document.querySelectorAll('dialog').forEach((dialog) => {
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
 });
 
 document.addEventListener('keydown', (event) => {

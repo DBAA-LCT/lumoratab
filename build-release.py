@@ -13,14 +13,26 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parent
 DIST = ROOT / "dist"
-SOURCE_FILES = ("manifest.json", "newtab.html", "newtab.css", "newtab.js")
+SOURCE_FILES = (
+    "manifest.json",
+    "newtab.html",
+    "newtab.css",
+    "newtab.js",
+    "service-worker.js",
+    "ai-relay.js",
+)
 ICON_FILES = (
     "icons/icon-16.png",
     "icons/icon-32.png",
     "icons/icon-48.png",
     "icons/icon-128.png",
 )
-PACKAGE_FILES = SOURCE_FILES + ICON_FILES
+SITE_ICON_FILES = tuple(
+    path.relative_to(ROOT).as_posix()
+    for path in sorted((ROOT / "icons" / "sites").glob("*"))
+    if path.is_file()
+)
+PACKAGE_FILES = SOURCE_FILES + ICON_FILES + SITE_ICON_FILES
 TARGETS = {
     "edge": ("Microsoft Edge", "edge://extensions/"),
     "chrome": ("Google Chrome", "chrome://extensions/"),

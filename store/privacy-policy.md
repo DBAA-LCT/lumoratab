@@ -15,6 +15,7 @@ LumoraTab 可以访问浏览器收藏夹和常用网站，以便用户选择或�
 部分功能需要直接请求第三方服务：
 
 - 用户输入搜索内容时，在线联想功能会把输入内容发送给当前选择的 Google、百度或 Bing 联想服务。按下搜索后，浏览器会导航到用户选择的搜索引擎。
+- 用户主动选择豆包或 DeepSeek 并按下回车时，扩展会在当前浏览器会话内短暂保存该问题，打开所选 AI 网页、填入问题并尝试点击发送。问题在网页脚本领取后立即从扩展会话存储中删除，不写入 LumoraTab 搜索历史；登录、发送及后续处理由对应 AI 网站负责。
 - 启用必应壁纸时，扩展会请求 Microsoft Bing 的壁纸列表和图片。
 - 自动获取快捷网站图标时，扩展优先使用浏览器本地图标接口；如果本地图标不可用，可能把快捷网站的域名发送给 Clearbit、Google、Icon Horse 或 DuckDuckGo 的图标服务。
 - 用户设置自定义图标网址时，浏览器会直接向该网址请求图片。
@@ -36,7 +37,7 @@ LumoraTab 可以访问浏览器收藏夹和常用网站，以便用户选择或�
 - `storage`：在本地保存设置和内容。
 - `topSites`：首次使用时读取常用网站并生成快捷方式。
 - `unlimitedStorage`：支持保存用户选择的自定义壁纸和图标文件。
-- 网站访问权限：仅用于搜索联想和必应壁纸功能。
+- 网站访问权限：用于搜索联想、必应壁纸，以及仅在用户主动选择时向豆包或 DeepSeek 网页填写并发送纯文字问题。
 
 ### 6. 联系方式
 
@@ -53,6 +54,7 @@ LumoraTab can access browser bookmarks and top sites so users can select or crea
 Some optional features communicate directly with third-party services:
 
 - Online suggestions send the text being typed to the suggestion endpoint of the selected provider (Google, Baidu, or Bing). Submitting a search navigates to that provider.
+- When the user explicitly selects Doubao or DeepSeek and presses Enter, the question is held briefly in browser-session memory while LumoraTab opens the selected AI website, fills the question, and attempts to click Send. The question is removed from extension session storage as soon as the site script claims it and is not added to LumoraTab search history. Authentication, delivery, and subsequent processing are handled by the selected AI website.
 - Bing wallpaper mode requests wallpaper metadata and images from Microsoft Bing.
 - Automatic shortcut icons use the browser favicon API first. If no usable local icon is available, a shortcut hostname may be sent to Clearbit, Google, Icon Horse, or DuckDuckGo favicon services.
 - A custom icon URL selected by the user is requested directly by the browser.
@@ -74,7 +76,7 @@ Users can edit shortcuts, search history, and settings within the extension. Uni
 - `storage`: stores settings and user-created content locally.
 - `topSites`: creates initial shortcuts from frequently visited sites.
 - `unlimitedStorage`: supports locally selected wallpaper and icon files.
-- Host access: used only for search suggestions and Bing wallpaper features.
+- Host access: used for search suggestions, Bing wallpaper, and—only after an explicit user action—filling and submitting a plain-text question on Doubao or DeepSeek.
 
 ### 6. Contact
 
