@@ -5,8 +5,10 @@
 *.key
 *.crx
 *.log
+__pycache__/
 .DS_Store
 Thumbs.db
 
 dist/custom-homepage-*/
 dist/lumoratab-*/
+dist/lumoratab-*.zip

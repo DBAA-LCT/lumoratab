@@ -48,11 +48,11 @@ jobs:
             exit 1
           fi
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --title "Custom Homepage $tag" --generate-notes
+            gh release create "$tag" --title "LumoraTab $tag" --generate-notes
           fi
           gh release upload "$tag" \
-            "dist/custom-homepage-chrome-v$version.zip#Chrome unpacked package" \
-            "dist/custom-homepage-edge-v$version.zip#Edge unpacked package" \
-            "dist/custom-homepage-v$version.crx#Signed CRX3 package" \
+            "dist/lumoratab-chrome-v$version.zip#Chrome unpacked package" \
+            "dist/lumoratab-edge-v$version.zip#Edge unpacked package" \
+            "dist/lumoratab-v$version.crx#Signed CRX3 package" \
             "dist/SHA256SUMS.txt#SHA256 checksums" \
             --clobber
