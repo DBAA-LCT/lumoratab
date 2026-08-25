@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "微光新标签页 LumoraTab",
+    "description": "扩展在浏览器和扩展商店中显示的名称"
+  },
+  "extensionDescription": {
+    "message": "简洁、快速、可自定义的新标签页，支持搜索、AI 提问转发、快捷方式、收藏夹与壁纸。",
+    "description": "扩展在浏览器和扩展商店中显示的简短描述"
+  }
+}

@@ -32,7 +32,12 @@ SITE_ICON_FILES = tuple(
     for path in sorted((ROOT / "icons" / "sites").glob("*"))
     if path.is_file()
 )
-PACKAGE_FILES = SOURCE_FILES + ICON_FILES + SITE_ICON_FILES
+LOCALE_FILES = tuple(
+    path.relative_to(ROOT).as_posix()
+    for path in sorted((ROOT / "_locales").glob("**/*"))
+    if path.is_file()
+)
+PACKAGE_FILES = SOURCE_FILES + ICON_FILES + SITE_ICON_FILES + LOCALE_FILES
 TARGETS = {
     "edge": ("Microsoft Edge", "edge://extensions/"),
     "chrome": ("Google Chrome", "chrome://extensions/"),

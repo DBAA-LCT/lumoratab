@@ -53,6 +53,12 @@ const SEARCH_ENGINES = {
   }
 };
 const SEARCH_ENGINE_ORDER = Object.keys(SEARCH_ENGINES);
+const CONFIG_EXPORT_FORMAT = 'lumoratab-config';
+const CONFIG_EXPORT_VERSION = 1;
+const DEFAULT_AI_OPTIONS = {
+  doubao: { deepThink: false, webSearch: false },
+  deepseek: { deepThink: false, webSearch: false }
+};
 
 const NATIVE_ICONS = {
   voice: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm-1 4.9A7 7 0 0 1 5 12h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.9V22h-2v-3.1Z"/></svg>',
@@ -217,6 +223,7 @@ const state = {
   shortcuts: [],
   iconSourceCache: {},
   resourceOverrides: {},
+  aiOptions: structuredClone(DEFAULT_AI_OPTIONS),
   customization: {
     theme: 'light',
     wallpaper: { mode: 'none', image: '' },
@@ -233,6 +240,9 @@ const elements = {
   searchLeadingAction: document.querySelector('#search-leading-action'),
   searchIcon: document.querySelector('#search-icon'),
   searchNativeActions: document.querySelector('#search-native-actions'),
+  aiOptions: document.querySelector('#ai-options'),
+  aiDeepThink: document.querySelector('#ai-deep-think'),
+  aiWebSearch: document.querySelector('#ai-web-search'),
   searchSubmit: document.querySelector('#search-submit'),
   searchExternalAction: document.querySelector('#search-external-action'),
   searchAddMenu: document.querySelector('#search-add-menu'),
@@ -305,6 +315,10 @@ const elements = {
   customizeDialog: document.querySelector('#customize-dialog'),
   customizeForm: document.querySelector('#customize-form'),
   resetCustomization: document.querySelector('#reset-customization'),
+  exportConfig: document.querySelector('#export-config'),
+  importConfig: document.querySelector('#import-config'),
+  importConfigFile: document.querySelector('#import-config-file'),
+  configTransferStatus: document.querySelector('#config-transfer-status'),
   wallpaperFileLabel: document.querySelector('#wallpaper-file-label'),
   wallpaperFile: document.querySelector('#wallpaper-file'),
   wallpaperHint: document.querySelector('#wallpaper-hint'),
@@ -356,11 +370,146 @@ function renderNativeSearchBox() {
   elements.searchIcon.hidden = !config.showSearchIcon;
   elements.searchNativeActions.replaceChildren(...config.actions.map(createNativeActionButton));
   elements.searchNativeActions.setAttribute('aria-label', `${engine.name} 搜索工具`);
+  elements.aiOptions.hidden = engine.type !== 'ai';
+  if (engine.type === 'ai') {
+    const options = state.aiOptions[state.searchEngine];
+    elements.aiDeepThink.checked = Boolean(options?.deepThink);
+    elements.aiWebSearch.checked = Boolean(options?.webSearch);
+  }
   elements.searchSubmit.hidden = !config.submitLabel;
   elements.searchSubmit.textContent = config.submitLabel || '';
   elements.searchExternalAction.hidden = !config.externalAction;
   elements.searchExternalAction.dataset.action = config.externalAction || '';
   elements.searchAddMenu.hidden = true;
+  resizeSearchInput();
+}
+
+function exportedCustomization() {
+  const wallpaper = state.customization.wallpaper || {};
+  return {
+    theme: state.customization.theme,
+    shortcutRows: state.customization.shortcutRows,
+    wallpaper: {
+      mode: wallpaper.mode || 'none',
+      image: wallpaper.image || '',
+      rotate: wallpaper.rotate || 'day'
+    }
+  };
+}
+
+function downloadConfig() {
+  const payload = {
+    format: CONFIG_EXPORT_FORMAT,
+    version: CONFIG_EXPORT_VERSION,
+    exportedAt: new Date().toISOString(),
+    data: {
+      searchEngine: state.searchEngine,
+      searchHistory: state.searchHistory,
+      shortcuts: state.shortcuts,
+      customization: exportedCustomization(),
+      resourceOverrides: state.resourceOverrides,
+      aiOptions: state.aiOptions
+    }
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `lumoratab-config-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  elements.configTransferStatus.dataset.state = 'success';
+  elements.configTransferStatus.textContent = '配置已导出，文件仅保存在本地。';
+}
+
+function normalizeImportedCustomization(value) {
+  const source = value && typeof value === 'object' ? value : {};
+  const wallpaperSource = source.wallpaper && typeof source.wallpaper === 'object' ? source.wallpaper : {};
+  const mode = ['none', 'bing', 'custom'].includes(wallpaperSource.mode) ? wallpaperSource.mode : 'none';
+  const image = typeof wallpaperSource.image === 'string'
+    && (wallpaperSource.image.startsWith('data:image/') || /^https:\/\//i.test(wallpaperSource.image))
+    ? wallpaperSource.image
+    : '';
+  return {
+    theme: ['light', 'dark'].includes(source.theme) ? source.theme : 'light',
+    shortcutRows: [0, 1, 2, 3].includes(Number(source.shortcutRows)) ? Number(source.shortcutRows) : 3,
+    wallpaper: {
+      mode,
+      image,
+      rotate: ['tab', 'hour', 'day'].includes(wallpaperSource.rotate) ? wallpaperSource.rotate : 'day'
+    }
+  };
+}
+
+function normalizeImportedResourceOverrides(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const knownResources = new Set(SHORTCUT_LIBRARY.map((resource) => resource.url));
+  return Object.fromEntries(Object.entries(value).flatMap(([resourceId, target]) => {
+    if (!knownResources.has(resourceId) || typeof target !== 'string') return [];
+    try { return [[resourceId, normalizeUrl(target)]]; } catch { return []; }
+  }));
+}
+
+function normalizeImportedConfig(payload) {
+  if (payload?.format !== CONFIG_EXPORT_FORMAT || payload?.version !== CONFIG_EXPORT_VERSION || !payload.data) {
+    throw new Error('这不是受支持的 LumoraTab 配置文件');
+  }
+  const data = payload.data;
+  const shortcuts = Array.isArray(data.shortcuts)
+    ? data.shortcuts.slice(0, 500).map(normalizeShortcutEntry).filter(Boolean)
+    : [];
+  const searchHistory = Array.isArray(data.searchHistory)
+    ? data.searchHistory
+      .filter((item) => typeof item?.query === 'string' && SEARCH_ENGINES[item.engine])
+      .slice(0, 10)
+      .map((item) => ({ query: item.query.trim().slice(0, 500), engine: item.engine, timestamp: Number(item.timestamp) || Date.now() }))
+      .filter((item) => item.query)
+    : [];
+  return {
+    searchEngine: SEARCH_ENGINES[data.searchEngine] ? data.searchEngine : 'google',
+    searchHistory,
+    shortcuts,
+    customization: normalizeImportedCustomization(data.customization),
+    resourceOverrides: normalizeImportedResourceOverrides(data.resourceOverrides),
+    aiOptions: {
+      doubao: {
+        deepThink: Boolean(data.aiOptions?.doubao?.deepThink),
+        webSearch: Boolean(data.aiOptions?.doubao?.webSearch)
+      },
+      deepseek: {
+        deepThink: Boolean(data.aiOptions?.deepseek?.deepThink),
+        webSearch: Boolean(data.aiOptions?.deepseek?.webSearch)
+      }
+    }
+  };
+}
+
+async function importConfigFile(file) {
+  if (!file) return;
+  if (file.size > 25 * 1024 * 1024) throw new Error('配置文件不能超过 25 MB');
+  const payload = JSON.parse(await file.text());
+  const config = normalizeImportedConfig(payload);
+  await storageSet(config);
+  elements.configTransferStatus.dataset.state = 'success';
+  elements.configTransferStatus.textContent = '配置导入成功，正在重新载入…';
+  setTimeout(() => location.reload(), 500);
+}
+
+function resizeSearchInput() {
+  const isAi = SEARCH_ENGINES[state.searchEngine]?.type === 'ai';
+  elements.searchInput.style.height = isAi ? 'auto' : '100%';
+  if (isAi) elements.searchInput.style.height = `${Math.min(elements.searchInput.scrollHeight, 128)}px`;
+}
+
+async function saveAiOptions() {
+  if (SEARCH_ENGINES[state.searchEngine]?.type !== 'ai') return;
+  state.aiOptions[state.searchEngine] = {
+    deepThink: elements.aiDeepThink.checked,
+    webSearch: elements.aiWebSearch.checked
+  };
+  await storageSet({ aiOptions: state.aiOptions });
 }
 
 const VISUAL_SEARCH_URLS = {
@@ -741,7 +890,7 @@ function refreshSearchSuggestions() {
   }
   const engine = SEARCH_ENGINES[state.searchEngine];
   if (engine.type === 'ai') {
-    renderSearchSuggestions([], `按 Enter 发送给${engine.name}`);
+    setSearchSuggestionsOpen(false);
     return;
   }
   if (!shouldRequestSuggestions(query)) {
@@ -756,7 +905,7 @@ function refreshSearchSuggestions() {
 
   renderSearchSuggestions([], '正在获取联想…');
   const engineId = state.searchEngine;
-  suggestionTimer = setTimeout(() => fetchEngineSuggestions(query, engineId, requestId), 280);
+  suggestionTimer = setTimeout(() => fetchEngineSuggestions(query, engineId, requestId), isComposing ? 40 : 80);
 }
 
 async function addSearchHistory(query) {
@@ -782,6 +931,7 @@ async function navigateFromSearch(query) {
           id: globalThis.crypto?.randomUUID?.() || `ai-${Date.now()}`,
           provider: state.searchEngine,
           text: value,
+          options: { ...state.aiOptions[state.searchEngine] },
           createdAt: Date.now()
         }
       });
@@ -804,19 +954,28 @@ elements.searchInput.addEventListener('focus', () => {
 });
 elements.searchInput.addEventListener('compositionstart', () => {
   isComposing = true;
-  clearTimeout(suggestionTimer);
-  suggestionController?.abort();
+});
+elements.searchInput.addEventListener('compositionupdate', () => {
+  requestAnimationFrame(refreshSearchSuggestions);
 });
 elements.searchInput.addEventListener('compositionend', () => {
   isComposing = false;
   refreshSearchSuggestions();
 });
 elements.searchInput.addEventListener('input', () => {
-  if (!isComposing) refreshSearchSuggestions();
+  resizeSearchInput();
+  refreshSearchSuggestions();
 });
 elements.searchInput.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     setSearchSuggestionsOpen(false);
+    return;
+  }
+  if (event.key === 'Enter' && !isComposing) {
+    const isAi = SEARCH_ENGINES[state.searchEngine]?.type === 'ai';
+    if (isAi && event.shiftKey) return;
+    event.preventDefault();
+    elements.searchForm.requestSubmit();
     return;
   }
   if (event.key === 'ArrowDown' && !elements.searchSuggestions.hidden) {
@@ -2414,13 +2573,17 @@ function normalizeShortcutEntry(item) {
 }
 
 async function initialize() {
-  const stored = await storageGet(['searchEngine', 'searchHistory', 'shortcuts', 'customization', 'iconSourceCache', 'resourceOverrides']);
+  const stored = await storageGet(['searchEngine', 'searchHistory', 'shortcuts', 'customization', 'iconSourceCache', 'resourceOverrides', 'aiOptions']);
   state.searchEngine = SEARCH_ENGINES[stored.searchEngine] ? stored.searchEngine : 'google';
   state.searchHistory = Array.isArray(stored.searchHistory) ? stored.searchHistory
     .filter((item) => typeof item?.query === 'string' && SEARCH_ENGINES[item.engine])
     .slice(0, 10) : [];
   hydrateResolvedIconCache(stored.iconSourceCache);
   state.resourceOverrides = stored.resourceOverrides && typeof stored.resourceOverrides === 'object' ? stored.resourceOverrides : {};
+  state.aiOptions = {
+    doubao: { ...DEFAULT_AI_OPTIONS.doubao, ...(stored.aiOptions?.doubao || {}) },
+    deepseek: { ...DEFAULT_AI_OPTIONS.deepseek, ...(stored.aiOptions?.deepseek || {}) }
+  };
   const shortcutSource = Array.isArray(stored.shortcuts) ? stored.shortcuts : await loadTopSites();
   state.shortcuts = shortcutSource.map(normalizeShortcutEntry).filter(Boolean);
   if (Array.isArray(stored.shortcuts) && state.shortcuts.length !== stored.shortcuts.length) {
@@ -2447,6 +2610,22 @@ elements.searchEngineSwitch.addEventListener('click', switchSearchEngine);
 elements.searchForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   await navigateFromSearch(elements.searchInput.value);
+});
+elements.aiDeepThink.addEventListener('change', saveAiOptions);
+elements.aiWebSearch.addEventListener('change', saveAiOptions);
+elements.exportConfig.addEventListener('click', downloadConfig);
+elements.importConfig.addEventListener('click', () => elements.importConfigFile.click());
+elements.importConfigFile.addEventListener('change', async () => {
+  elements.configTransferStatus.dataset.state = '';
+  elements.configTransferStatus.textContent = '';
+  try {
+    await importConfigFile(elements.importConfigFile.files[0]);
+  } catch (error) {
+    elements.configTransferStatus.dataset.state = 'error';
+    elements.configTransferStatus.textContent = `导入失败：${error.message || '配置文件无效'}`;
+  } finally {
+    elements.importConfigFile.value = '';
+  }
 });
 
 elements.shortcutEditAction.addEventListener('click', editShortcutFromSettings);

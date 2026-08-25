@@ -54,8 +54,12 @@
           <svg id="search-icon" class="search-icon" viewBox="0 0 24 24" aria-hidden="true" hidden>
             <path d="m20.3 19-4.7-4.7a7 7 0 1 0-1.4 1.4l4.7 4.7a1 1 0 0 0 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/>
           </svg>
-          <input id="search-input" type="text" autocomplete="off" spellcheck="false" aria-label="搜索 Google 或输入网址" aria-autocomplete="list" aria-controls="suggestion-list" placeholder="">
+          <textarea id="search-input" rows="1" autocomplete="off" spellcheck="false" aria-label="搜索 Google 或输入网址" aria-autocomplete="list" aria-controls="suggestion-list" placeholder=""></textarea>
           <div id="search-native-actions" class="search-native-actions" aria-label="Google 搜索工具"></div>
+          <div id="ai-options" class="ai-options" aria-label="AI 提问选项" hidden>
+            <label class="ai-option"><input id="ai-deep-think" type="checkbox"><span>深度思考</span></label>
+            <label class="ai-option"><input id="ai-web-search" type="checkbox"><span>联网搜索</span></label>
+          </div>
           <button id="search-submit" class="native-submit-button" type="submit" hidden></button>
         </form>
         <button id="search-external-action" class="native-external-action" type="button" aria-label="打开 Microsoft Copilot" data-action="copilot" hidden>
@@ -300,6 +304,16 @@
           <input id="wallpaper-file" type="file" accept="image/png,image/jpeg,image/webp">
         </label>
         <p id="wallpaper-hint" class="wallpaper-hint" hidden>图片仅保存在此扩展中，不会上传。</p>
+      </fieldset>
+      <fieldset class="config-transfer-settings">
+        <legend>配置同步</legend>
+        <p>导出快捷方式、搜索设置、外观、AI 选项和本地图片，再在另一台设备导入。</p>
+        <div class="config-transfer-actions">
+          <button id="export-config" class="secondary-button" type="button">导出配置</button>
+          <button id="import-config" class="secondary-button" type="button">导入配置</button>
+          <input id="import-config-file" type="file" accept="application/json,.json" hidden>
+        </div>
+        <p id="config-transfer-status" class="config-transfer-status" role="status"></p>
       </fieldset>
       <fieldset class="privacy-settings">
         <legend>隐私与数据</legend>

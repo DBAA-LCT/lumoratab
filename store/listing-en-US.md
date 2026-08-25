@@ -14,7 +14,10 @@ LumoraTab replaces the default new tab page in Microsoft Edge and Google Chrome 
 
 Key features:
 
-- Switch between Google, Baidu, and Bing search, with URL navigation and online suggestions.
+- Switch between Google, Baidu, Bing, Sogou, and 360 Search, with URL navigation and online suggestions.
+- Ask Doubao or DeepSeek from a multiline composer with Enter to send, Shift+Enter for a new line, plus Deep Thinking and Web Search options.
+- Show search suggestions during IME composition, including before Chinese text is committed.
+- Export shortcuts, search preferences, appearance, AI options, and local images to a JSON file and restore them on another device.
 - Create initial shortcuts from browser top sites.
 - Add, edit, group, and remove shortcuts.
 - Search browser bookmarks and add selected pages as shortcuts.
