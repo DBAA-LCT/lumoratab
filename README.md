@@ -8,6 +8,7 @@
 
 <p>
   <a href="https://github.com/DBAA-LCT/lumoratab/releases/latest"><img src="https://img.shields.io/github/v/release/DBAA-LCT/lumoratab?display_name=tag&amp;style=flat-square" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License"></a>
   <a href="manifest.json"><img src="https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&amp;logo=googlechrome&amp;logoColor=white" alt="Manifest V3"></a>
   <a href="#安装"><img src="https://img.shields.io/badge/Chrome-supported-34A853?style=flat-square&amp;logo=googlechrome&amp;logoColor=white" alt="Chrome supported"></a>
   <a href="https://microsoftedge.microsoft.com/addons/detail/%E5%BE%AE%E5%85%89%E6%96%B0%E6%A0%87%E7%AD%BE%E9%A1%B5-lumoratab/heclemacigopmipgoelcfljelkbdfjll"><img src="https://img.shields.io/badge/Edge-商店安装-0078D7?style=flat-square&amp;logo=microsoftedge&amp;logoColor=white" alt="从 Microsoft Edge 加载项商店安装"></a>
@@ -163,6 +164,10 @@ lumoratab/
 Chromium 源码是开源的，但浏览器内置新标签页并不是可独立安装的扩展。它依赖 Chromium 内部的 WebUI、C++ / Mojo 接口和浏览器服务；Google Chrome 版本还包含品牌与在线服务组件。
 
 LumoraTab 因此采用轻量的独立实现，不复制庞大的 Chromium 源码，也不依赖来源不明的第三方新标签页代码。
+
+## 许可证
+
+本项目采用 [MIT License](LICENSE) 开源。你可以自由使用、复制、修改和分发，但需保留原始版权与许可声明。
 
 ## 商标说明
 
