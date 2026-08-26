@@ -10,7 +10,7 @@
   <a href="https://github.com/DBAA-LCT/lumoratab/releases/latest"><img src="https://img.shields.io/github/v/release/DBAA-LCT/lumoratab?display_name=tag&amp;style=flat-square" alt="Release"></a>
   <a href="manifest.json"><img src="https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square&amp;logo=googlechrome&amp;logoColor=white" alt="Manifest V3"></a>
   <a href="#安装"><img src="https://img.shields.io/badge/Chrome-supported-34A853?style=flat-square&amp;logo=googlechrome&amp;logoColor=white" alt="Chrome supported"></a>
-  <a href="#安装"><img src="https://img.shields.io/badge/Edge-supported-0078D7?style=flat-square&amp;logo=microsoftedge&amp;logoColor=white" alt="Edge supported"></a>
+  <a href="https://microsoftedge.microsoft.com/addons/detail/%E5%BE%AE%E5%85%89%E6%96%B0%E6%A0%87%E7%AD%BE%E9%A1%B5-lumoratab/heclemacigopmipgoelcfljelkbdfjll"><img src="https://img.shields.io/badge/Edge-商店安装-0078D7?style=flat-square&amp;logo=microsoftedge&amp;logoColor=white" alt="从 Microsoft Edge 加载项商店安装"></a>
 </p>
 
 <img src="docs/screenshots/home-light.png" width="100%" alt="LumoraTab 浅色主页">
@@ -38,6 +38,8 @@
 | ![LumoraTab 快捷方式资源库](docs/screenshots/resource-library.png) | ![LumoraTab 设置面板](docs/screenshots/settings.png) |
 
 ## 安装
+
+Microsoft Edge 用户可直接前往 [Microsoft Edge 加载项商店](https://microsoftedge.microsoft.com/addons/detail/%E5%BE%AE%E5%85%89%E6%96%B0%E6%A0%87%E7%AD%BE%E9%A1%B5-lumoratab/heclemacigopmipgoelcfljelkbdfjll) 安装稳定版。
 
 前往 [GitHub Releases](https://github.com/DBAA-LCT/lumoratab/releases/latest) 下载最新版：
 
