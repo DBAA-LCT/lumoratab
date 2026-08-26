@@ -14,14 +14,14 @@ LumoraTab 是一款面向 Microsoft Edge 和 Google Chrome 的新标签页扩展
 
 主要功能：
 
-- 在 Google、百度、Bing、搜狗和 360 之间切换搜索，并支持网址直达与搜索联想。
-- 通过多行输入框向豆包或 DeepSeek 提问，支持 Enter 发送、Shift+Enter 换行，以及深度思考和联网搜索选项。
+- 在 Google、百度、Bing、搜狗和 360 之间切换搜索，可单独设置默认引擎和花瓣显示项，并支持网址直达与搜索联想。
+- 通过多行输入框向豆包或 DeepSeek 提问，支持 Enter 发送、Shift+Enter 换行；DeepSeek 还支持深度思考和联网搜索选项。
 - 支持在中文输入法组合拼音阶段实时显示搜索联想。
 - 可将快捷方式、搜索、外观、AI 选项和本地图片导出为配置文件，并在其他设备导入恢复。
 - 读取浏览器常用网站，快速生成初始快捷方式。
 - 自由添加、编辑、分组和移除快捷方式。
 - 搜索浏览器收藏夹并将网站添加到新标签页。
-- 优先使用浏览器本地站点图标，并支持自定义图标。
+- 正常使用时自动选择站点图标；需要更改时，可在自动结果、手动获取、图片网址和本地上传候选中选择。
 - 提供浅色、深色主题以及液态玻璃风格快捷方式。
 - 支持必应每日壁纸、本地自定义图片和定时轮换。
 - 设置和用户创建的内容保存在本地浏览器中。
@@ -41,4 +41,4 @@ Productivity / 生产力工具
 ## 支持与隐私
 
 - 支持：https://github.com/DBAA-LCT/lumoratab/issues
-- 隐私政策：https://github.com/DBAA-LCT/lumoratab/blob/release/v0.4.0/store/privacy-policy.md
+- 隐私政策：https://github.com/DBAA-LCT/lumoratab/blob/main/store/privacy-policy.md

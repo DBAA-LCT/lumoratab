@@ -6,7 +6,7 @@ LumoraTab replaces the browser new tab page with a customizable start page that 
 
 ## Permission justifications
 
-### `bookmarks`
+### Optional `bookmarks`
 
 Used only when the user opens the bookmark picker. It reads the browser bookmark tree so the user can search for and select a page to add as a shortcut. Bookmark data is not sent to the developer.
 
@@ -45,7 +45,7 @@ Requests are initiated only to provide the corresponding user-facing feature.
 - No advertising, analytics, tracking, sale of data, or creditworthiness use.
 - Bookmark, top-site, shortcut, customization, and local history data remain on the device.
 - Text entered into search is sent to the selected suggestion provider after a short debounce while online suggestions are active.
-- Shortcut hostnames may be sent to third-party favicon providers only when the browser favicon API does not return a usable icon.
+- Shortcut hostnames may be sent to third-party favicon providers only after the user clicks the icon-fetch action or explicitly enables automatic third-party icon services in settings.
 - Bing wallpaper mode requests metadata and images from Microsoft Bing.
 
 ## Certification test steps

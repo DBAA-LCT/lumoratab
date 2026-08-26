@@ -1,0 +1,23 @@
+name: 提出需求
+description: 建议新功能或体验改进
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景
+      description: 请说明当前遇到的问题或希望改善的场景。
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: 期望方案
+      description: 请描述希望 LumoraTab 如何工作。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 其他方案
+      description: 如果考虑过替代方案，可以在这里补充。

@@ -14,14 +14,14 @@ LumoraTab replaces the default new tab page in Microsoft Edge and Google Chrome 
 
 Key features:
 
-- Switch between Google, Baidu, Bing, Sogou, and 360 Search, with URL navigation and online suggestions.
-- Ask Doubao or DeepSeek from a multiline composer with Enter to send, Shift+Enter for a new line, plus Deep Thinking and Web Search options.
+- Switch between Google, Baidu, Bing, Sogou, and 360 Search, with separate default-engine and visible-selector settings, URL navigation, and online suggestions.
+- Ask Doubao or DeepSeek from a multiline composer with Enter to send and Shift+Enter for a new line; DeepSeek also supports Deep Thinking and Web Search options.
 - Show search suggestions during IME composition, including before Chinese text is committed.
 - Export shortcuts, search preferences, appearance, AI options, and local images to a JSON file and restore them on another device.
 - Create initial shortcuts from browser top sites.
 - Add, edit, group, and remove shortcuts.
 - Search browser bookmarks and add selected pages as shortcuts.
-- Prefer browser-provided favicons and optionally use custom icons.
+- Use automatic site icons by default, or choose among automatic, manually fetched, URL, and uploaded candidates when changing an icon.
 - Choose light or dark appearance with glass-style shortcut surfaces.
 - Use Bing wallpapers, a local custom image, and configurable wallpaper rotation.
 - Keep settings and user-created content in local browser storage.
@@ -41,4 +41,4 @@ new tab; shortcuts; wallpaper; bookmarks; search; start page; productivity
 ## Support and privacy
 
 - Support: https://github.com/DBAA-LCT/lumoratab/issues
-- Privacy policy: https://github.com/DBAA-LCT/lumoratab/blob/release/v0.4.0/store/privacy-policy.md
+- Privacy policy: https://github.com/DBAA-LCT/lumoratab/blob/main/store/privacy-policy.md

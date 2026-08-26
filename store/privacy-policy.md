@@ -8,7 +8,7 @@ LumoraTab（微光新标签页）是一款替换浏览器新标签页的扩展�
 
 ### 1. 本地访问与存储
 
-LumoraTab 可以访问浏览器收藏夹和常用网站，以便用户选择或生成快捷方式。扩展会在浏览器本地保存快捷方式、分组、搜索引擎选择、搜索历史、主题、壁纸设置、自定义图片以及站点图标缓存。这些数据保存在 `chrome.storage.local` 中，不会上传到开发者控制的服务器。
+LumoraTab 在用户打开收藏夹选择器时申请可选的收藏夹权限，并可在首次使用时访问常用网站，以便用户选择或生成快捷方式。扩展会在浏览器本地保存快捷方式、分组、搜索引擎选择、搜索历史、主题、壁纸设置、自定义图片以及站点图标缓存。这些数据保存在 `chrome.storage.local` 中，不会上传到开发者控制的服务器。
 
 用户主动导出配置时，快捷方式、设置和本地图片会写入用户下载的 JSON 文件；导入只读取用户选择的本地文件，不会上传到 LumoraTab 服务器。
 
@@ -17,9 +17,9 @@ LumoraTab 可以访问浏览器收藏夹和常用网站，以便用户选择或�
 部分功能需要直接请求第三方服务：
 
 - 用户输入搜索内容时，在线联想功能会把输入内容发送给当前选择的 Google、百度或 Bing 联想服务。按下搜索后，浏览器会导航到用户选择的搜索引擎。
-- 用户主动选择豆包或 DeepSeek 并按下回车时，扩展会在当前浏览器会话内短暂保存该问题及用户选择的“深度思考”“联网搜索”开关，打开所选 AI 网页、应用网页能够识别的开关、填入问题并尝试发送。任务仅在网页确认发送后从扩展会话存储中删除；未发送任务最多可在十分钟内被目标网页领取，且不会写入 LumoraTab 搜索历史。登录、发送及后续处理由对应 AI 网站负责。
+- 用户主动选择豆包或 DeepSeek 并按下回车时，扩展会在当前浏览器会话内短暂保存该问题；选择 DeepSeek 时还会保存用户选择的“深度思考”“联网搜索”开关。扩展随后打开所选 AI 网页、应用 DeepSeek 网页能够识别的开关、填入问题并尝试发送。任务仅在网页确认发送后从扩展会话存储中删除；未发送任务最多可在十分钟内被目标网页领取，且不会写入 LumoraTab 搜索历史。登录、发送及后续处理由对应 AI 网站负责。
 - 启用必应壁纸时，扩展会请求 Microsoft Bing 的壁纸列表和图片。
-- 自动获取快捷网站图标时，扩展优先使用浏览器本地图标接口；如果本地图标不可用，可能把快捷网站的域名发送给 Clearbit、Google、Icon Horse 或 DuckDuckGo 的图标服务。
+- 自动获取快捷网站图标时，扩展默认只请求目标网站自身的常见图标路径并使用浏览器本地图标接口。只有用户在“更改图标”中点击“手动获取”，或在设置中明确启用“自动使用第三方图标服务”后，才可能把快捷网站的域名发送给 Clearbit、Google、Icon Horse 或 DuckDuckGo。
 - 用户设置自定义图标网址时，浏览器会直接向该网址请求图片。
 
 这些第三方服务会按照各自的隐私政策处理请求。LumoraTab 不会在这些请求中主动附加浏览器 Cookie、身份凭据或开发者自定义的用户标识。
@@ -34,7 +34,7 @@ LumoraTab 可以访问浏览器收藏夹和常用网站，以便用户选择或�
 
 ### 5. 权限用途
 
-- `bookmarks`：供用户搜索浏览器收藏夹并添加快捷方式。
+- `bookmarks`（可选）：仅在用户打开收藏夹选择器时申请，供用户搜索浏览器收藏夹并添加快捷方式。
 - `favicon`：读取浏览器保存的站点图标。
 - `storage`：在本地保存设置和内容。
 - `topSites`：首次使用时读取常用网站并生成快捷方式。
@@ -49,7 +49,7 @@ LumoraTab 可以访问浏览器收藏夹和常用网站，以便用户选择或�
 
 ### 1. Local access and storage
 
-LumoraTab can access browser bookmarks and top sites so users can select or create shortcuts. Shortcuts, groups, search-engine selection, local search history, theme and wallpaper settings, user-selected images, and favicon cache entries are stored locally in `chrome.storage.local`. They are not uploaded to a server controlled by the developer.
+LumoraTab requests optional bookmark access only when the user opens the bookmark picker, and it may access top sites during first use so users can select or create shortcuts. Shortcuts, groups, search-engine selection, local search history, theme and wallpaper settings, user-selected images, and favicon cache entries are stored locally in `chrome.storage.local`. They are not uploaded to a server controlled by the developer.
 
 When a user explicitly exports configuration, shortcuts, settings, and local images are written to a downloaded JSON file. Import reads only the local file selected by the user and does not upload it to a LumoraTab server.
 
@@ -60,7 +60,7 @@ Some optional features communicate directly with third-party services:
 - Online suggestions send the text being typed to the suggestion endpoint of the selected provider (Google, Baidu, or Bing). Submitting a search navigates to that provider.
 - When the user explicitly selects Doubao or DeepSeek and presses Enter, the question and the selected Deep Thinking and Web Search options are held briefly in browser-session memory while LumoraTab opens the selected AI website, applies options that the page exposes, fills the question, and attempts to send it. The task is removed only after the page confirms that it was sent; an unsent task remains claimable for up to ten minutes and is never added to LumoraTab search history. Authentication, delivery, and subsequent processing are handled by the selected AI website.
 - Bing wallpaper mode requests wallpaper metadata and images from Microsoft Bing.
-- Automatic shortcut icons use the browser favicon API first. If no usable local icon is available, a shortcut hostname may be sent to Clearbit, Google, Icon Horse, or DuckDuckGo favicon services.
+- Automatic shortcut icons request common icon paths from the target website and use the browser favicon API by default. A shortcut hostname may be sent to Clearbit, Google, Icon Horse, or DuckDuckGo only after the user opens “Change icon” and clicks “Manual fetch,” or explicitly enables automatic third-party icon services in settings.
 - A custom icon URL selected by the user is requested directly by the browser.
 
 Those services process requests under their own privacy policies. LumoraTab does not intentionally attach browser cookies, credentials, or a developer-defined user identifier to these requests.
@@ -75,7 +75,7 @@ Users can edit shortcuts, search history, and settings within the extension. Uni
 
 ### 5. Permission purposes
 
-- `bookmarks`: lets users search their browser bookmarks and create shortcuts.
+- `bookmarks` (optional): requested only when the user opens the bookmark picker, then used to search bookmarks and create shortcuts.
 - `favicon`: reads favicons already available to the browser.
 - `storage`: stores settings and user-created content locally.
 - `topSites`: creates initial shortcuts from frequently visited sites.

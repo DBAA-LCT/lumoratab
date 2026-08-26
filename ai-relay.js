@@ -1,13 +1,8 @@
 (() => {
-  const provider = location.hostname.endsWith('doubao.com') ? 'doubao'
-    : location.hostname.endsWith('deepseek.com') ? 'deepseek'
-      : '';
+  const { OPTION_ALIASES, detectProvider } = globalThis.LumoraAiRelayCore;
+  const provider = detectProvider(location.hostname);
   if (!provider) return;
-
-  const OPTION_ALIASES = {
-    deepThink: /深度思考|深度推理|deep\s*think|deepthink|\br1\b/i,
-    webSearch: /联网搜索|智能搜索|网络搜索|搜索网页|web\s*search/i
-  };
+  const OPTION_MENU_IDENTITY = /工具|更多|技能|tool|more|skill/i;
   const SEND_IDENTITY = /发送|send|submit|arrow-up|paper-plane/i;
   const NON_SEND_IDENTITY = /语音|voice|麦克风|microphone|附件|attach|上传|upload|图片|image|工具|tool|停止|stop/i;
 
@@ -22,25 +17,67 @@
     && !element.matches('[disabled], [aria-disabled="true"]')
     && getComputedStyle(element).pointerEvents !== 'none';
 
-  const waitFor = async (finder, timeout = 25000, interval = 250) => {
-    const deadline = Date.now() + timeout;
-    while (Date.now() < deadline) {
-      const result = finder();
-      if (result) return result;
-      await new Promise((resolve) => setTimeout(resolve, interval));
-    }
-    return null;
-  };
+  const waitFor = (finder, timeout = 25000, interval = 100) => new Promise((resolve) => {
+    let observer;
+    let intervalId;
+    let timeoutId;
+    let checking = false;
+    let settled = false;
 
-  const identity = (element) => [
-    element.textContent,
-    element.getAttribute('aria-label'),
-    element.getAttribute('title'),
-    element.getAttribute('data-testid'),
-    element.getAttribute('data-state'),
-    element.id,
-    typeof element.className === 'string' ? element.className : ''
-  ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      observer?.disconnect();
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+      resolve(result);
+    };
+    const check = () => {
+      if (checking) return;
+      checking = true;
+      let result = null;
+      try { result = finder(); } catch { /* 页面仍在初始化，等待下一次变化。 */ }
+      checking = false;
+      if (result) finish(result);
+    };
+
+    check();
+    if (settled) return;
+    if (document.documentElement) {
+      observer = new MutationObserver(check);
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['disabled', 'aria-disabled', 'aria-pressed', 'aria-checked', 'data-state']
+      });
+    }
+    intervalId = setInterval(check, interval);
+    timeoutId = setTimeout(() => finish(null), timeout);
+  });
+
+  const identity = (element) => {
+    const descendants = [...element.querySelectorAll('[aria-label], [title], [data-testid], [data-icon], svg, use')]
+      .slice(0, 12)
+      .flatMap((child) => [
+        child.getAttribute('aria-label'),
+        child.getAttribute('title'),
+        child.getAttribute('data-testid'),
+        child.getAttribute('data-icon'),
+        child.getAttribute('href'),
+        child.getAttribute('xlink:href')
+      ]);
+    return [
+      element.textContent,
+      element.getAttribute('aria-label'),
+      element.getAttribute('title'),
+      element.getAttribute('data-testid'),
+      element.getAttribute('data-state'),
+      element.id,
+      typeof element.className === 'string' ? element.className : '',
+      ...descendants
+    ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  };
 
   const findComposer = () => {
     const candidates = [...document.querySelectorAll('textarea, [contenteditable="true"], [role="textbox"]')]
@@ -90,12 +127,37 @@
 
   const nearbyControls = (composer) => {
     const composerRect = composer.getBoundingClientRect();
-    return [...document.querySelectorAll('button, [role="button"], label, input[type="checkbox"]')]
+    return [...document.querySelectorAll('button, [role="button"], [role="menuitem"], label, input[type="checkbox"]')]
       .filter((element) => {
-        if (!visible(element)) return false;
+        if (!visible(element) || !enabled(element)) return false;
         const rect = element.getBoundingClientRect();
         return rect.top < composerRect.bottom + 260 && rect.bottom > composerRect.top - 260;
       });
+  };
+
+  const findOptionControl = (composer, option) => {
+    const matcher = OPTION_ALIASES[option];
+    const composerRect = composer.getBoundingClientRect();
+    return nearbyControls(composer)
+      .filter((element) => matcher.test(identity(element)))
+      .sort((a, b) => {
+        const distance = (element) => {
+          const rect = element.getBoundingClientRect();
+          return Math.abs(rect.bottom - composerRect.bottom) + Math.abs(rect.left - composerRect.left) * .1;
+        };
+        return distance(a) - distance(b);
+      })[0] || null;
+  };
+
+  const revealOptionControl = async (composer, option) => {
+    const direct = findOptionControl(composer, option);
+    if (direct) return direct;
+    const trigger = nearbyControls(composer)
+      .filter((element) => OPTION_MENU_IDENTITY.test(identity(element)))
+      .sort((a, b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top)[0];
+    if (!trigger) return null;
+    trigger.click();
+    return waitFor(() => findOptionControl(composer, option), 1500, 50);
   };
 
   const activeState = (control) => {
@@ -115,15 +177,13 @@
   };
 
   const setOption = async (composer, option, desired) => {
-    const matcher = OPTION_ALIASES[option];
-    const control = nearbyControls(composer)
-      .filter((element) => matcher.test(identity(element)))
-      .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0];
+    let control = findOptionControl(composer, option);
+    if (!control && desired) control = await revealOptionControl(composer, option);
     if (!control) return false;
     const state = activeState(control);
     if ((desired && state !== true) || (!desired && state === true)) {
       control.click();
-      await new Promise((resolve) => setTimeout(resolve, 220));
+      await waitFor(() => !control.isConnected || activeState(control) === desired, 600, 40);
     }
     return true;
   };
@@ -163,10 +223,10 @@
     composer.dispatchEvent(new KeyboardEvent('keyup', init));
   };
 
-  const waitUntilSent = (composer, timeout = 5000) => waitFor(() => !readComposer(composer).trim(), timeout, 150);
+  const waitUntilSent = (composer, timeout = 5000) => waitFor(() => !readComposer(composer).trim(), timeout, 50);
 
   const sendPrompt = async (composer) => {
-    const button = await waitFor(() => findSendButton(composer), 12000);
+    const button = await waitFor(() => findSendButton(composer), 12000, 50);
     if (button) {
       button.click();
       if (await waitUntilSent(composer)) return true;
@@ -176,9 +236,6 @@
   };
 
   (async () => {
-    let composer = await waitFor(findComposer, 10 * 60 * 1000, 350);
-    if (!composer) return;
-
     let task;
     try {
       task = await chrome.runtime.sendMessage({ type: 'getAiPrompt', provider });
@@ -187,10 +244,15 @@
     }
     if (!task?.text) return;
 
+    let composer = await waitFor(findComposer, 60000, 80);
+    if (!composer) return;
+
     fillComposer(composer, task.text);
-    await waitFor(() => readComposer(composer).trim(), 4000, 120);
-    await setOption(composer, 'deepThink', Boolean(task.options?.deepThink));
-    await setOption(composer, 'webSearch', Boolean(task.options?.webSearch));
+    await waitFor(() => readComposer(composer).trim(), 4000, 40);
+    if (provider === 'deepseek') {
+      await setOption(composer, 'deepThink', Boolean(task.options?.deepThink));
+      await setOption(composer, 'webSearch', Boolean(task.options?.webSearch));
+    }
 
     composer = findComposer() || composer;
     if (!readComposer(composer).trim()) fillComposer(composer, task.text);

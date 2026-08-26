@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "__MSG_extensionDescription__",
   "default_locale": "zh_CN",
   "icons": {
@@ -22,16 +22,18 @@
         "https://*.doubao.com/*",
         "https://chat.deepseek.com/*"
       ],
-      "js": ["ai-relay.js"],
-      "run_at": "document_idle"
+      "js": ["ai-relay-core.js", "ai-relay.js"],
+      "run_at": "document_start"
     }
   ],
   "permissions": [
-    "bookmarks",
     "favicon",
     "storage",
     "topSites",
     "unlimitedStorage"
+  ],
+  "optional_permissions": [
+    "bookmarks"
   ],
   "host_permissions": [
     "https://suggestqueries.google.com/*",

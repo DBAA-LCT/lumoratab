@@ -1,3 +1,6 @@
+const { calculatePetalPositions, looksLikeUrl, normalizeEnginePetals, normalizeUrl, selectBestIcon, shouldRequestSuggestions } = globalThis.LumoraCore;
+const { ensureOptionalPermission, hasExtensionApi, reportError, storageGet, storageSet } = globalThis.LumoraPlatform;
+
 const SEARCH_ENGINES = {
   google: {
     name: 'Google',
@@ -53,10 +56,10 @@ const SEARCH_ENGINES = {
   }
 };
 const SEARCH_ENGINE_ORDER = Object.keys(SEARCH_ENGINES);
+const DEFAULT_ENGINE_PETALS = [...SEARCH_ENGINE_ORDER];
 const CONFIG_EXPORT_FORMAT = 'lumoratab-config';
 const CONFIG_EXPORT_VERSION = 1;
 const DEFAULT_AI_OPTIONS = {
-  doubao: { deepThink: false, webSearch: false },
   deepseek: { deepThink: false, webSearch: false }
 };
 
@@ -219,9 +222,12 @@ const BUNDLED_SITE_ICON_ALIASES = {
 
 const state = {
   searchEngine: 'google',
+  defaultSearchEngine: 'google',
+  enginePetals: [...DEFAULT_ENGINE_PETALS],
   searchHistory: [],
   shortcuts: [],
   iconSourceCache: {},
+  allowThirdPartyIcons: false,
   resourceOverrides: {},
   aiOptions: structuredClone(DEFAULT_AI_OPTIONS),
   customization: {
@@ -272,12 +278,18 @@ const elements = {
   shortcutUrl: document.querySelector('#shortcut-url'),
   shortcutUrlLabel: document.querySelector('#shortcut-url-label'),
   shortcutIconSettings: document.querySelector('#shortcut-icon-settings'),
-  shortcutIconMode: document.querySelector('#shortcut-icon-mode'),
+  shortcutChangeIcon: document.querySelector('#shortcut-change-icon'),
+  shortcutIconChooser: document.querySelector('#shortcut-icon-chooser'),
+  shortcutIconCandidates: document.querySelector('#shortcut-icon-candidates'),
+  shortcutFetchIcon: document.querySelector('#shortcut-fetch-icon'),
+  shortcutAddIconUrl: document.querySelector('#shortcut-add-icon-url'),
+  shortcutUploadIcon: document.querySelector('#shortcut-upload-icon'),
   shortcutIconUrlLabel: document.querySelector('#shortcut-icon-url-label'),
   shortcutIconUrl: document.querySelector('#shortcut-icon-url'),
-  shortcutIconFileLabel: document.querySelector('#shortcut-icon-file-label'),
   shortcutIconFile: document.querySelector('#shortcut-icon-file'),
   shortcutIconPreview: document.querySelector('#shortcut-icon-preview'),
+  shortcutIconSelectionLabel: document.querySelector('#shortcut-icon-selection-label'),
+  shortcutIconStatus: document.querySelector('#shortcut-icon-status'),
   resourcePickerButton: document.querySelector('#resource-picker-button'),
   resourcePicker: document.querySelector('#resource-picker'),
   resourceSearch: document.querySelector('#resource-search'),
@@ -319,25 +331,22 @@ const elements = {
   importConfig: document.querySelector('#import-config'),
   importConfigFile: document.querySelector('#import-config-file'),
   configTransferStatus: document.querySelector('#config-transfer-status'),
+  allowThirdPartyIcons: document.querySelector('#allow-third-party-icons'),
   wallpaperFileLabel: document.querySelector('#wallpaper-file-label'),
   wallpaperFile: document.querySelector('#wallpaper-file'),
   wallpaperHint: document.querySelector('#wallpaper-hint'),
   wallpaperRotateLabel: document.querySelector('#wallpaper-rotate-label'),
-  wallpaperRotate: document.querySelector('#wallpaper-rotate')
+  wallpaperRotate: document.querySelector('#wallpaper-rotate'),
+  appToast: document.querySelector('#app-toast')
 };
 
-function hasExtensionApi(namespace) {
-  return typeof chrome !== 'undefined' && Boolean(chrome[namespace]);
-}
-
-async function storageGet(keys) {
-  if (!hasExtensionApi('storage')) return {};
-  return chrome.storage.local.get(keys);
-}
-
-async function storageSet(value) {
-  if (!hasExtensionApi('storage')) return;
-  await chrome.storage.local.set(value);
+let toastTimer;
+function showToast(message, type = 'info') {
+  clearTimeout(toastTimer);
+  elements.appToast.textContent = message;
+  elements.appToast.dataset.state = type;
+  elements.appToast.hidden = false;
+  toastTimer = setTimeout(() => { elements.appToast.hidden = true; }, 4200);
 }
 
 function createNativeActionButton(action) {
@@ -370,9 +379,10 @@ function renderNativeSearchBox() {
   elements.searchIcon.hidden = !config.showSearchIcon;
   elements.searchNativeActions.replaceChildren(...config.actions.map(createNativeActionButton));
   elements.searchNativeActions.setAttribute('aria-label', `${engine.name} 搜索工具`);
-  elements.aiOptions.hidden = engine.type !== 'ai';
-  if (engine.type === 'ai') {
-    const options = state.aiOptions[state.searchEngine];
+  const supportsAiOptions = state.searchEngine === 'deepseek';
+  elements.aiOptions.hidden = !supportsAiOptions;
+  if (supportsAiOptions) {
+    const options = state.aiOptions.deepseek;
     elements.aiDeepThink.checked = Boolean(options?.deepThink);
     elements.aiWebSearch.checked = Boolean(options?.webSearch);
   }
@@ -403,10 +413,12 @@ function downloadConfig() {
     version: CONFIG_EXPORT_VERSION,
     exportedAt: new Date().toISOString(),
     data: {
-      searchEngine: state.searchEngine,
+      searchEngine: state.defaultSearchEngine,
+      enginePetals: state.enginePetals,
       searchHistory: state.searchHistory,
       shortcuts: state.shortcuts,
       customization: exportedCustomization(),
+      allowThirdPartyIcons: state.allowThirdPartyIcons,
       resourceOverrides: state.resourceOverrides,
       aiOptions: state.aiOptions
     }
@@ -467,17 +479,17 @@ function normalizeImportedConfig(payload) {
       .map((item) => ({ query: item.query.trim().slice(0, 500), engine: item.engine, timestamp: Number(item.timestamp) || Date.now() }))
       .filter((item) => item.query)
     : [];
+  const searchEngine = SEARCH_ENGINES[data.searchEngine] ? data.searchEngine : 'google';
+  const enginePetals = normalizeEnginePetals(SEARCH_ENGINE_ORDER, data.enginePetals, searchEngine);
   return {
-    searchEngine: SEARCH_ENGINES[data.searchEngine] ? data.searchEngine : 'google',
+    searchEngine,
+    enginePetals,
     searchHistory,
     shortcuts,
     customization: normalizeImportedCustomization(data.customization),
+    allowThirdPartyIcons: Boolean(data.allowThirdPartyIcons),
     resourceOverrides: normalizeImportedResourceOverrides(data.resourceOverrides),
     aiOptions: {
-      doubao: {
-        deepThink: Boolean(data.aiOptions?.doubao?.deepThink),
-        webSearch: Boolean(data.aiOptions?.doubao?.webSearch)
-      },
       deepseek: {
         deepThink: Boolean(data.aiOptions?.deepseek?.deepThink),
         webSearch: Boolean(data.aiOptions?.deepseek?.webSearch)
@@ -499,13 +511,13 @@ async function importConfigFile(file) {
 
 function resizeSearchInput() {
   const isAi = SEARCH_ENGINES[state.searchEngine]?.type === 'ai';
-  elements.searchInput.style.height = isAi ? 'auto' : '100%';
+  elements.searchInput.style.height = isAi ? 'auto' : '';
   if (isAi) elements.searchInput.style.height = `${Math.min(elements.searchInput.scrollHeight, 128)}px`;
 }
 
 async function saveAiOptions() {
-  if (SEARCH_ENGINES[state.searchEngine]?.type !== 'ai') return;
-  state.aiOptions[state.searchEngine] = {
+  if (state.searchEngine !== 'deepseek') return;
+  state.aiOptions.deepseek = {
     deepThink: elements.aiDeepThink.checked,
     webSearch: elements.aiWebSearch.checked
   };
@@ -591,6 +603,27 @@ async function handleNativeSearchAction(action) {
   }
 }
 
+function renderEnginePetals() {
+  const options = [...document.querySelectorAll('#search-engine-menu [data-engine]')];
+  options.forEach((option) => {
+    option.hidden = !state.enginePetals.includes(option.dataset.engine);
+    option.setAttribute('aria-checked', String(option.dataset.engine === state.searchEngine));
+  });
+  const visibleOptions = options.filter((option) => !option.hidden);
+  const canSwitch = visibleOptions.length > 1;
+  elements.searchEngineSwitch.disabled = !canSwitch;
+  if (!canSwitch) {
+    const engine = SEARCH_ENGINES[state.searchEngine];
+    elements.searchEngineSwitch.setAttribute('aria-label', `${engine.name}；可在设置中添加更多搜索引擎`);
+  }
+  const positions = calculatePetalPositions(visibleOptions.length, window.innerWidth);
+  visibleOptions.forEach((option, index) => {
+    option.style.setProperty('--petal-x', `${positions[index].x}px`);
+    option.style.setProperty('--petal-y', `${positions[index].y}px`);
+    option.style.transitionDelay = `${positions[index].delay}ms`;
+  });
+}
+
 function renderSearchEngine() {
   const engine = SEARCH_ENGINES[state.searchEngine];
   const isAi = engine.type === 'ai';
@@ -598,9 +631,7 @@ function renderSearchEngine() {
   elements.searchEngineSwitch.setAttribute('aria-label', isAi ? `当前向${engine.name}提问，点击切换` : `当前使用${engine.name}搜索，点击展开搜索引擎`);
   elements.searchInput.setAttribute('aria-label', isAi ? `向${engine.name}提问` : `使用${engine.name}搜索或输入网址`);
   renderNativeSearchBox();
-  document.querySelectorAll('#search-engine-menu [data-engine]').forEach((option) => {
-    option.setAttribute('aria-checked', String(option.dataset.engine === state.searchEngine));
-  });
+  renderEnginePetals();
 }
 
 elements.searchLeadingAction.addEventListener('click', () => handleNativeSearchAction(elements.searchLeadingAction.dataset.action));
@@ -639,7 +670,8 @@ function setEngineMenuOpen(open, focusSelected = false) {
     requestAnimationFrame(() => {
       if (elements.searchEngineSwitch.getAttribute('aria-expanded') !== 'true') return;
       menu.dataset.open = 'true';
-      if (focusSelected) menu.querySelector(`[data-engine="${state.searchEngine}"]`).focus();
+      if (focusSelected) (menu.querySelector(`[data-engine="${state.searchEngine}"]:not([hidden])`)
+        || menu.querySelector('[data-engine]:not([hidden])'))?.focus();
     });
     return;
   }
@@ -650,13 +682,21 @@ function setEngineMenuOpen(open, focusSelected = false) {
   }, 500);
 }
 
-async function selectSearchEngine(engineId) {
-  if (!SEARCH_ENGINES[engineId]) return;
+function selectSearchEngine(engineId) {
+  if (!SEARCH_ENGINES[engineId] || !state.enginePetals.includes(engineId)) return;
   state.searchEngine = engineId;
   renderSearchEngine();
   setEngineMenuOpen(false);
-  await storageSet({ searchEngine: state.searchEngine });
   elements.searchEngineSwitch.focus();
+}
+
+async function setDefaultSearchEngine(engineId) {
+  if (!SEARCH_ENGINES[engineId]) return;
+  state.defaultSearchEngine = engineId;
+  if (!state.enginePetals.includes(engineId)) state.enginePetals.push(engineId);
+  state.searchEngine = engineId;
+  renderSearchEngine();
+  await storageSet({ searchEngine: engineId, enginePetals: state.enginePetals });
 }
 
 function switchSearchEngine(event) {
@@ -673,7 +713,7 @@ searchEngineMenu.addEventListener('click', (event) => {
 searchEngineMenu.addEventListener('keydown', (event) => {
   if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
   event.preventDefault();
-  const options = [...searchEngineMenu.querySelectorAll('[data-engine]')];
+  const options = [...searchEngineMenu.querySelectorAll('[data-engine]:not([hidden])')];
   const currentIndex = options.indexOf(document.activeElement);
   let nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 :
     (currentIndex + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
@@ -687,29 +727,6 @@ document.addEventListener('keydown', (event) => {
   setEngineMenuOpen(false);
   elements.searchEngineSwitch.focus();
 });
-
-function normalizeUrl(value) {
-  const trimmed = value.trim();
-  if (!trimmed) throw new Error('请输入网址');
-
-  let candidate;
-  if (/^https?:\/\//i.test(trimmed)) {
-    candidate = trimmed;
-  } else if (/^localhost(?::\d+)?(?:\/|$)/i.test(trimmed)) {
-    candidate = `http://${trimmed}`;
-  } else {
-    candidate = `https://${trimmed}`;
-  }
-
-  const url = new URL(candidate);
-  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('仅支持 http 或 https 网址');
-  return url.href;
-}
-
-function looksLikeUrl(value) {
-  const query = value.trim();
-  return /^(https?:\/\/|localhost(?::\d+)?(?:\/|$)|(?:[\w-]+\.)+[a-z]{2,}(?:[\/:?#]|$))/i.test(query);
-}
 
 const HISTORY_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3a9 9 0 1 0 8.5 6h-2.1A7 7 0 1 1 13 5v3l4-4-4-4v3Zm-1 5h2v5l4 2-1 1.7-5-2.7V8Z"/></svg>';
 const SUGGESTION_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.3 19-4.7-4.7a7 7 0 1 0-1.4 1.4l4.7 4.7a1 1 0 0 0 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>';
@@ -773,13 +790,10 @@ function createSuggestionItem(item) {
   text.textContent = item.query;
   const engine = document.createElement('span');
   engine.className = 'suggestion-engine';
-  engine.textContent = SEARCH_ENGINES[item.engine]?.name || SEARCH_ENGINES[state.searchEngine].name;
+  engine.textContent = SEARCH_ENGINES[state.searchEngine].name;
   button.append(icon, text, engine);
 
-  button.addEventListener('click', async () => {
-    if (item.type === 'history' && SEARCH_ENGINES[item.engine] && item.engine !== state.searchEngine) {
-      await selectSearchEngine(item.engine);
-    }
+  button.addEventListener('click', () => {
     navigateFromSearch(item.query);
   });
 
@@ -843,11 +857,6 @@ function renderSearchSuggestions(remoteSuggestions = [], status = '') {
   const hasContent = Boolean(elements.suggestionList.children.length);
   setSearchSuggestionsOpen(hasContent);
   elements.suggestionStatus.textContent = hasContent ? `显示 ${history.length + suggestions.length} 条搜索建议` : '没有搜索建议';
-}
-
-function shouldRequestSuggestions(query) {
-  const characters = [...query];
-  return /[\u3400-\u9fff]/.test(query) ? characters.length >= 1 : characters.length >= 2;
 }
 
 async function fetchEngineSuggestions(query, engineId, requestId) {
@@ -931,7 +940,7 @@ async function navigateFromSearch(query) {
           id: globalThis.crypto?.randomUUID?.() || `ai-${Date.now()}`,
           provider: state.searchEngine,
           text: value,
-          options: { ...state.aiOptions[state.searchEngine] },
+          options: state.searchEngine === 'deepseek' ? { ...state.aiOptions.deepseek } : {},
           createdAt: Date.now()
         }
       });
@@ -1060,6 +1069,7 @@ const ICON_DATA_CACHE_MAX_BYTES = 160 * 1024;
 const ICON_RENDER_SIZE = 48;
 const resolvedIconCache = new Map();
 const pendingIconResolutions = new Map();
+const iconResolutionTokens = new Map();
 let iconCacheWriteTimer;
 
 function isReusableIconUrl(url) {
@@ -1103,7 +1113,7 @@ function rememberResolvedIcon(host, result) {
   state.iconSourceCache = Object.fromEntries(resolvedIconCache);
   clearTimeout(iconCacheWriteTimer);
   iconCacheWriteTimer = setTimeout(() => {
-    storageSet({ iconSourceCache: state.iconSourceCache }).catch(() => {});
+    storageSet({ iconSourceCache: state.iconSourceCache }).catch((error) => reportError('保存图标缓存失败', error));
   }, 100);
 }
 
@@ -1129,7 +1139,9 @@ async function persistResolvedIconData(host, result) {
     resolvedIconCache.set(host, { ...current, dataUrl, updatedAt: Date.now() });
     state.iconSourceCache = Object.fromEntries(resolvedIconCache);
     await storageSet({ iconSourceCache: state.iconSourceCache });
-  } catch {}
+  } catch (error) {
+    reportError('持久化图标图片失败', error);
+  }
 }
 
 function getCachedIconUrl(pageUrl) {
@@ -1168,7 +1180,7 @@ function probeIconSource(candidate) {
   });
 }
 
-function getIconSourceCandidates(pageUrl) {
+function getIconSourceCandidates(pageUrl, includeThirdParty = false) {
   const host = getShortcutHost(pageUrl);
   const candidates = [];
   try {
@@ -1182,7 +1194,7 @@ function getIconSourceCandidates(pageUrl) {
       { url: `${origin}/favicon.ico`, minSize: 32, firstParty: true }
     );
   } catch {}
-  if (host) {
+  if (host && includeThirdParty) {
     candidates.push(
       { url: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=256`, minSize: 64 },
       { url: `https://logo.clearbit.com/${encodeURIComponent(host)}?size=256`, minSize: 64 },
@@ -1196,41 +1208,51 @@ function getIconSourceCandidates(pageUrl) {
   return candidates;
 }
 
+async function discoverBestIconResult(pageUrl, includeThirdParty, preferStrongFirstParty) {
+  const candidates = getIconSourceCandidates(pageUrl, includeThirdParty);
+  const firstPartyResults = await Promise.allSettled(candidates.filter((candidate) => candidate.firstParty).map(probeIconSource));
+  const firstPartyIcons = firstPartyResults
+    .filter((result) => result.status === 'fulfilled')
+    .map((result) => result.value);
+  if (preferStrongFirstParty) {
+    const strongFirstParty = selectBestIcon(firstPartyIcons.filter(
+      (result) => result.vector || Math.min(result.width, result.height) >= 96
+    ), false);
+    if (strongFirstParty) return strongFirstParty;
+  }
+
+  const fallbackResults = await Promise.allSettled(candidates.filter((candidate) => !candidate.firstParty).map(probeIconSource));
+  const fallbackIcons = fallbackResults
+    .filter((result) => result.status === 'fulfilled')
+    .map((result) => result.value);
+  return selectBestIcon([...firstPartyIcons, ...fallbackIcons], preferStrongFirstParty);
+}
+
 function resolveIconUrl(pageUrl) {
   const host = getShortcutHost(pageUrl);
   const cached = host ? resolvedIconCache.get(host) : null;
   if (cached?.dataUrl || cached?.url) return Promise.resolve(cached.dataUrl || cached.url);
   if (host && pendingIconResolutions.has(host)) return pendingIconResolutions.get(host);
+  const token = Symbol('icon-resolution');
+  if (host) iconResolutionTokens.set(host, token);
+  const isCurrentRequest = () => !host || iconResolutionTokens.get(host) === token;
 
   const request = (async () => {
-    const candidates = getIconSourceCandidates(pageUrl);
-    const firstPartyResults = await Promise.allSettled(candidates.filter((candidate) => candidate.firstParty).map(probeIconSource));
-    const firstPartyIcons = firstPartyResults
-      .filter((result) => result.status === 'fulfilled')
-      .map((result) => result.value);
-    const strongFirstParty = firstPartyIcons
-      .filter((result) => result.vector || Math.min(result.width, result.height) >= 96)
-      .sort((a, b) => b.score - a.score)[0];
-    if (strongFirstParty) {
-      rememberResolvedIcon(host, strongFirstParty);
-      persistResolvedIconData(host, strongFirstParty);
-      return strongFirstParty.url;
-    }
-
-    const fallbackResults = await Promise.allSettled(candidates.filter((candidate) => !candidate.firstParty).map(probeIconSource));
-    const best = [...firstPartyIcons, ...fallbackResults
-      .filter((result) => result.status === 'fulfilled')
-      .map((result) => result.value)]
-      .sort((a, b) => b.score - a.score)[0];
+    const best = await discoverBestIconResult(pageUrl, state.allowThirdPartyIcons, true);
     if (!best) return '';
-    rememberResolvedIcon(host, best);
-    persistResolvedIconData(host, best);
+    if (isCurrentRequest()) {
+      rememberResolvedIcon(host, best);
+      persistResolvedIconData(host, best);
+    }
     return best.url;
   })();
 
   if (host) {
     pendingIconResolutions.set(host, request);
-    request.finally(() => pendingIconResolutions.delete(host));
+    request.finally(() => {
+      if (pendingIconResolutions.get(host) === request) pendingIconResolutions.delete(host);
+      if (iconResolutionTokens.get(host) === token) iconResolutionTokens.delete(host);
+    });
   }
   return request;
 }
@@ -1278,12 +1300,49 @@ function createShortcutIcon(shortcut, className = 'shortcut-icon') {
 }
 
 let pendingIconFileData = '';
+let pendingManualIconUrl = '';
+let selectedIconCandidate = 'auto';
+
+const ICON_CANDIDATE_LABELS = {
+  auto: '自动图标',
+  manual: '手动获取',
+  url: '图片网址',
+  file: '本地上传'
+};
+
+function getCandidateIconConfig(candidate = selectedIconCandidate, validate = false) {
+  if (candidate === 'auto') return undefined;
+  if (candidate === 'manual') {
+    if (!pendingManualIconUrl) {
+      if (validate) throw new Error('请先手动获取图标');
+      return undefined;
+    }
+    return { type: 'url', value: pendingManualIconUrl, source: 'manual' };
+  }
+  if (candidate === 'file') {
+    if (!pendingIconFileData) {
+      if (validate) throw new Error('请先上传本地图标');
+      return undefined;
+    }
+    return { type: 'file', value: pendingIconFileData };
+  }
+  const value = elements.shortcutIconUrl.value.trim();
+  if (!value) {
+    if (validate) throw new Error('请输入图标图片网址');
+    return undefined;
+  }
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') throw new Error();
+    return { type: 'url', value: url.href };
+  } catch {
+    if (validate) throw new Error('图标网址必须是有效的 HTTPS 地址');
+    return { type: 'url', value };
+  }
+}
 
 function getDraftShortcut() {
-  const mode = elements.shortcutIconMode.value;
-  let icon;
-  if (mode === 'url' && elements.shortcutIconUrl.value.trim()) icon = { type: 'url', value: elements.shortcutIconUrl.value.trim() };
-  if (mode === 'file' && pendingIconFileData) icon = { type: 'file', value: pendingIconFileData };
+  const icon = getCandidateIconConfig();
   return {
     name: elements.shortcutName.value.trim() || 'A',
     url: elements.shortcutUrl.value.trim() || 'https://example.com/',
@@ -1295,6 +1354,7 @@ function renderShortcutIconPreview() {
   const shortcut = getDraftShortcut();
   const preview = elements.shortcutIconPreview;
   preview.textContent = shortcut.name.charAt(0).toUpperCase() || 'A';
+  elements.shortcutIconSelectionLabel.textContent = ICON_CANDIDATE_LABELS[selectedIconCandidate] || ICON_CANDIDATE_LABELS.auto;
   const source = getShortcutIconSource(shortcut);
   if (source.url) {
     attachIconImage(preview, source.url);
@@ -1303,11 +1363,71 @@ function renderShortcutIconPreview() {
   if (source.type === 'favicon') attachResolvedFavicon(preview, shortcut.url);
 }
 
-function updateShortcutIconFields() {
-  const mode = elements.shortcutIconMode.value;
-  elements.shortcutIconUrlLabel.hidden = mode !== 'url';
-  elements.shortcutIconFileLabel.hidden = mode !== 'file';
-  renderShortcutIconPreview();
+function createIconCandidate(key, label, url = '') {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'shortcut-icon-candidate';
+  button.setAttribute('role', 'radio');
+  button.setAttribute('aria-checked', String(selectedIconCandidate === key));
+  button.setAttribute('aria-label', `使用${label}`);
+  const icon = document.createElement('span');
+  icon.className = 'shortcut-icon';
+  icon.textContent = elements.shortcutName.value.trim().charAt(0).toUpperCase() || 'A';
+  if (key === 'auto') attachResolvedFavicon(icon, elements.shortcutUrl.value.trim() || 'https://example.com/');
+  else if (url) attachIconImage(icon, url);
+  const copy = document.createElement('span');
+  copy.className = 'shortcut-icon-candidate-label';
+  copy.textContent = label;
+  button.append(icon, copy);
+  button.addEventListener('click', () => {
+    selectedIconCandidate = key;
+    renderShortcutIconCandidates();
+    renderShortcutIconPreview();
+  });
+  return button;
+}
+
+function renderShortcutIconCandidates() {
+  if (elements.shortcutIconChooser.hidden) return;
+  const candidates = [createIconCandidate('auto', '自动获取')];
+  if (pendingManualIconUrl) candidates.push(createIconCandidate('manual', '手动获取', pendingManualIconUrl));
+  const url = elements.shortcutIconUrl.value.trim();
+  if (url) candidates.push(createIconCandidate('url', '图片网址', url));
+  if (pendingIconFileData) candidates.push(createIconCandidate('file', '本地上传', pendingIconFileData));
+  elements.shortcutIconCandidates.replaceChildren(...candidates);
+}
+
+function setShortcutIconChooserOpen(open) {
+  elements.shortcutIconChooser.hidden = !open;
+  elements.shortcutChangeIcon.setAttribute('aria-expanded', String(open));
+  elements.shortcutChangeIcon.textContent = open ? '收起选择' : '更改图标';
+  if (open) renderShortcutIconCandidates();
+}
+
+async function fetchShortcutIcon() {
+  const originalLabel = elements.shortcutFetchIcon.textContent;
+  try {
+    const pageUrl = normalizeUrl(elements.shortcutUrl.value);
+    elements.shortcutFetchIcon.disabled = true;
+    elements.shortcutFetchIcon.textContent = '获取中…';
+    elements.shortcutError.textContent = '';
+    elements.shortcutIconStatus.dataset.state = '';
+    elements.shortcutIconStatus.textContent = '正在从更多来源获取候选图标…';
+    const result = await discoverBestIconResult(pageUrl, true, false);
+    if (!result || result.local || !/^https:\/\//i.test(result.url)) throw new Error('未找到不同于自动图标的可用候选');
+    pendingManualIconUrl = result.url;
+    selectedIconCandidate = 'manual';
+    renderShortcutIconCandidates();
+    renderShortcutIconPreview();
+    elements.shortcutIconStatus.dataset.state = 'success';
+    elements.shortcutIconStatus.textContent = `已加入 ${getShortcutHost(pageUrl) || '该网站'} 的手动候选，并选中使用。`;
+  } catch (error) {
+    elements.shortcutIconStatus.dataset.state = 'error';
+    elements.shortcutIconStatus.textContent = `获取失败：${error.message}`;
+  } finally {
+    elements.shortcutFetchIcon.disabled = false;
+    elements.shortcutFetchIcon.textContent = originalLabel;
+  }
 }
 
 function readIconFile(file) {
@@ -1322,17 +1442,7 @@ function readIconFile(file) {
 }
 
 function getIconConfigFromForm() {
-  const mode = elements.shortcutIconMode.value;
-  if (mode === 'auto') return undefined;
-  if (mode === 'file') {
-    if (!pendingIconFileData) throw new Error('请选择本地图标文件');
-    return { type: 'file', value: pendingIconFileData };
-  }
-  const value = elements.shortcutIconUrl.value.trim();
-  if (!value) throw new Error('请输入图标图片网址');
-  const url = new URL(value);
-  if (url.protocol !== 'https:') throw new Error('图标网址必须使用 HTTPS');
-  return { type: 'url', value: url.href };
+  return getCandidateIconConfig(selectedIconCandidate, true);
 }
 
 let activeShortcutMenuIndex = -1;
@@ -1850,6 +1960,17 @@ function renderBookmarkOptions(query = '') {
 
 async function loadBookmarks() {
   const status = document.querySelector('#bookmark-status');
+  status.textContent = '正在请求收藏夹权限…';
+  try {
+    if (!await ensureOptionalPermission('bookmarks')) {
+      status.textContent = '未授予收藏夹权限；仍可手动添加网站';
+      return;
+    }
+  } catch (error) {
+    reportError('请求收藏夹权限失败', error);
+    status.textContent = '无法请求收藏夹权限，请在扩展管理页检查权限';
+    return;
+  }
   if (!hasExtensionApi('bookmarks')) {
     status.textContent = '请先在 edge://extensions/ 中加载并重新加载此扩展';
     return;
@@ -1862,7 +1983,8 @@ async function loadBookmarks() {
       cachedBookmarks = flattenBookmarks(tree);
     }
     renderBookmarkOptions(document.querySelector('#bookmark-search').value);
-  } catch {
+  } catch (error) {
+    reportError('读取收藏夹失败', error);
     status.textContent = '无法读取收藏夹，请在扩展管理页确认收藏夹权限';
   }
 }
@@ -2364,10 +2486,16 @@ function openShortcutDialog(destination = 'root', editIndex = -1) {
   elements.shortcutUrl.required = true;
   elements.shortcutUrlLabel.hidden = false;
   elements.shortcutIconSettings.hidden = false;
-  elements.shortcutIconMode.value = item?.icon?.type || 'auto';
-  elements.shortcutIconUrl.value = item?.icon?.type === 'url' ? item.icon.value : '';
+  selectedIconCandidate = item?.icon?.type === 'file' ? 'file'
+    : item?.icon?.type === 'url' && item.icon.source === 'manual' ? 'manual'
+      : item?.icon?.type === 'url' ? 'url' : 'auto';
+  pendingManualIconUrl = item?.icon?.source === 'manual' ? item.icon.value : '';
+  elements.shortcutIconUrl.value = item?.icon?.type === 'url' && item.icon.source !== 'manual' ? item.icon.value : '';
   elements.shortcutIconFile.value = '';
   pendingIconFileData = item?.icon?.type === 'file' ? item.icon.value : '';
+  elements.shortcutIconUrlLabel.hidden = true;
+  elements.shortcutIconStatus.dataset.state = '';
+  elements.shortcutIconStatus.textContent = '';
   destinationLabel.hidden = false;
   elements.shortcutLocationSection.hidden = false;
   elements.shortcutMainTabs.hidden = false;
@@ -2395,7 +2523,8 @@ function openShortcutDialog(destination = 'root', editIndex = -1) {
     elements.shortcutUrl.value = item.url;
   }
 
-  updateShortcutIconFields();
+  setShortcutIconChooserOpen(Boolean(item?.icon));
+  renderShortcutIconPreview();
   elements.shortcutTabLibrary.onclick = () => setAddShortcutTab('library');
   elements.shortcutTabCustom.onclick = () => setAddShortcutTab('custom');
   document.querySelector('#bookmark-picker-button').onclick = () => setBookmarkPickerOpen(true);
@@ -2466,7 +2595,8 @@ async function refreshBingWallpaper({ force = false } = {}) {
     try {
       pool = await fetchBingWallpaperUrls();
       poolChanged = true;
-    } catch {
+    } catch (error) {
+      reportError('获取必应壁纸列表失败，尝试使用缓存', error);
       // 网络失败时沿用已缓存的壁纸池
     }
   }
@@ -2515,7 +2645,11 @@ function populateCustomizationForm() {
   const selectedTheme = elements.customizeForm.elements.namedItem('theme');
   selectedTheme.value = state.customization.theme === 'dark' ? 'dark' : 'light';
   const selectedEngine = elements.customizeForm.elements.namedItem('searchEngine');
-  if (selectedEngine) selectedEngine.value = state.searchEngine;
+  if (selectedEngine) selectedEngine.value = state.defaultSearchEngine;
+  elements.customizeForm.querySelectorAll('input[name="enginePetals"]').forEach((input) => {
+    input.checked = state.enginePetals.includes(input.value);
+  });
+  elements.allowThirdPartyIcons.checked = state.allowThirdPartyIcons;
   const selectedWallpaper = elements.customizeForm.elements.namedItem('wallpaper');
   if (selectedWallpaper) selectedWallpaper.value = state.customization.wallpaper?.mode || 'none';
   const selectedRows = elements.customizeForm.elements.namedItem('shortcutRows');
@@ -2534,7 +2668,8 @@ async function loadTopSites() {
       .slice(0, 8)
       .map((site) => ({ name: site.title || new URL(site.url).hostname, url: site.url }));
     return supportedSites.length ? supportedSites : DEFAULT_SHORTCUTS;
-  } catch {
+  } catch (error) {
+    reportError('读取常用网站失败，使用默认快捷方式', error);
     return DEFAULT_SHORTCUTS;
   }
 }
@@ -2545,7 +2680,7 @@ function normalizeShortcutIcon(icon) {
   if (icon.type === 'url') {
     try {
       const url = new URL(icon.value);
-      if (url.protocol === 'https:') return { type: 'url', value: url.href };
+      if (url.protocol === 'https:') return { type: 'url', value: url.href, ...(icon.source === 'manual' ? { source: 'manual' } : {}) };
     } catch {}
   }
   return undefined;
@@ -2573,15 +2708,17 @@ function normalizeShortcutEntry(item) {
 }
 
 async function initialize() {
-  const stored = await storageGet(['searchEngine', 'searchHistory', 'shortcuts', 'customization', 'iconSourceCache', 'resourceOverrides', 'aiOptions']);
-  state.searchEngine = SEARCH_ENGINES[stored.searchEngine] ? stored.searchEngine : 'google';
+  const stored = await storageGet(['searchEngine', 'enginePetals', 'searchHistory', 'shortcuts', 'customization', 'iconSourceCache', 'allowThirdPartyIcons', 'resourceOverrides', 'aiOptions']);
+  state.defaultSearchEngine = SEARCH_ENGINES[stored.searchEngine] ? stored.searchEngine : 'google';
+  state.searchEngine = state.defaultSearchEngine;
+  state.enginePetals = normalizeEnginePetals(SEARCH_ENGINE_ORDER, stored.enginePetals, state.defaultSearchEngine);
   state.searchHistory = Array.isArray(stored.searchHistory) ? stored.searchHistory
     .filter((item) => typeof item?.query === 'string' && SEARCH_ENGINES[item.engine])
     .slice(0, 10) : [];
   hydrateResolvedIconCache(stored.iconSourceCache);
+  state.allowThirdPartyIcons = Boolean(stored.allowThirdPartyIcons);
   state.resourceOverrides = stored.resourceOverrides && typeof stored.resourceOverrides === 'object' ? stored.resourceOverrides : {};
   state.aiOptions = {
-    doubao: { ...DEFAULT_AI_OPTIONS.doubao, ...(stored.aiOptions?.doubao || {}) },
     deepseek: { ...DEFAULT_AI_OPTIONS.deepseek, ...(stored.aiOptions?.deepseek || {}) }
   };
   const shortcutSource = Array.isArray(stored.shortcuts) ? stored.shortcuts : await loadTopSites();
@@ -2632,24 +2769,52 @@ elements.shortcutEditAction.addEventListener('click', editShortcutFromSettings);
 elements.shortcutMovePrevAction.addEventListener('click', () => moveShortcutToAdjacentPage(-1));
 elements.shortcutMoveNextAction.addEventListener('click', () => moveShortcutToAdjacentPage(1));
 elements.shortcutDeleteAction.addEventListener('click', deleteShortcutFromSettings);
-elements.shortcutIconMode.addEventListener('change', updateShortcutIconFields);
+elements.shortcutChangeIcon.addEventListener('click', () => setShortcutIconChooserOpen(elements.shortcutIconChooser.hidden));
+elements.shortcutFetchIcon.addEventListener('click', fetchShortcutIcon);
+elements.shortcutAddIconUrl.addEventListener('click', () => {
+  elements.shortcutIconUrlLabel.hidden = !elements.shortcutIconUrlLabel.hidden;
+  if (!elements.shortcutIconUrlLabel.hidden) requestAnimationFrame(() => elements.shortcutIconUrl.focus());
+});
+elements.shortcutUploadIcon.addEventListener('click', () => elements.shortcutIconFile.click());
 elements.resourceAddSelected.addEventListener('click', addSelectedLibraryResources);
 elements.resourceUrlForm.addEventListener('submit', saveResourceUrlOverride);
 elements.resourceUrlReset.addEventListener('click', resetResourceUrlOverride);
 elements.manageShortcutsButton.addEventListener('click', () => setShortcutSelectionMode(true));
 elements.cancelShortcutSelection.addEventListener('click', () => setShortcutSelectionMode(false));
 elements.deleteSelectedShortcuts.addEventListener('click', deleteSelectedShortcuts);
-elements.shortcutIconUrl.addEventListener('input', renderShortcutIconPreview);
-elements.shortcutName.addEventListener('input', renderShortcutIconPreview);
-elements.shortcutUrl.addEventListener('input', renderShortcutIconPreview);
+elements.shortcutIconUrl.addEventListener('input', () => {
+  elements.shortcutIconStatus.dataset.state = '';
+  elements.shortcutIconStatus.textContent = '';
+  if (elements.shortcutIconUrl.value.trim()) selectedIconCandidate = 'url';
+  else if (selectedIconCandidate === 'url') selectedIconCandidate = 'auto';
+  renderShortcutIconCandidates();
+  renderShortcutIconPreview();
+});
+elements.shortcutName.addEventListener('input', () => {
+  renderShortcutIconCandidates();
+  renderShortcutIconPreview();
+});
+elements.shortcutUrl.addEventListener('input', () => {
+  elements.shortcutIconStatus.dataset.state = '';
+  elements.shortcutIconStatus.textContent = '';
+  pendingManualIconUrl = '';
+  if (selectedIconCandidate === 'manual') selectedIconCandidate = 'auto';
+  renderShortcutIconCandidates();
+  renderShortcutIconPreview();
+});
 elements.shortcutIconFile.addEventListener('change', async () => {
   try {
     pendingIconFileData = await readIconFile(elements.shortcutIconFile.files[0]);
+    selectedIconCandidate = 'file';
     elements.shortcutError.textContent = '';
+    renderShortcutIconCandidates();
     renderShortcutIconPreview();
   } catch (error) {
     pendingIconFileData = '';
+    if (selectedIconCandidate === 'file') selectedIconCandidate = 'auto';
     elements.shortcutError.textContent = error.message;
+    renderShortcutIconCandidates();
+    renderShortcutIconPreview();
   }
 });
 elements.shortcutSettingsMenu.addEventListener('keydown', (event) => {
@@ -2671,6 +2836,7 @@ window.addEventListener('resize', () => {
   closeShortcutSettingsMenu();
   clearTimeout(shortcutResizeTimer);
   shortcutResizeTimer = setTimeout(() => {
+    renderEnginePetals();
     const nextPageSize = getShortcutPageSize();
     if (nextPageSize !== renderedShortcutPageSize) renderShortcuts();
   }, 120);
@@ -2759,7 +2925,7 @@ elements.nextWallpaperButton.addEventListener('click', async () => {
   if (label) label.textContent = '切换中…';
   try {
     if (!await refreshBingWallpaper({ force: true })) {
-      alert('暂时无法切换必应壁纸，请检查网络后重试');
+      showToast('暂时无法切换必应壁纸，请检查网络后重试', 'error');
     }
   } finally {
     elements.nextWallpaperButton.disabled = false;
@@ -2783,17 +2949,18 @@ elements.customizeForm.addEventListener('submit', async (event) => {
     if (elements.wallpaperFile.files[0]) {
       try {
         wallpaper.image = await readWallpaperFileAsDataUrl(elements.wallpaperFile.files[0]);
-      } catch {
+      } catch (error) {
+        reportError('读取自定义壁纸失败', error);
         wallpaper.image = '';
       }
       if (!wallpaper.image) {
-        alert('壁纸图片读取失败，请换一张试试');
+        showToast('壁纸图片读取失败，请换一张试试', 'error');
         return;
       }
     } else if (state.customization.wallpaper?.mode === 'custom') {
       wallpaper.image = state.customization.wallpaper.image; // 未换图时沿用旧图
     } else {
-      alert('请先选择一张壁纸图片');
+      showToast('请先选择一张壁纸图片', 'error');
       return;
     }
   } else if (wallpaperMode === 'bing') {
@@ -2807,20 +2974,28 @@ elements.customizeForm.addEventListener('submit', async (event) => {
       ? Number(elements.customizeForm.elements.namedItem('shortcutRows').value)
       : 3
   };
+  state.allowThirdPartyIcons = elements.allowThirdPartyIcons.checked;
   applyCustomization();
   renderShortcuts();
-  await storageSet({ customization: state.customization });
+  await storageSet({ customization: state.customization, allowThirdPartyIcons: state.allowThirdPartyIcons });
   if (wallpaperMode === 'bing' && !await refreshBingWallpaper()) {
     state.customization = previousCustomization.wallpaper?.mode === 'bing' && !previousCustomization.wallpaper.image
       ? { ...previousCustomization, wallpaper: { mode: 'none', image: '' } }
       : previousCustomization;
     applyCustomization();
     await storageSet({ customization: state.customization });
-    alert('暂时无法获取必应壁纸，请检查网络后重试');
+    showToast('暂时无法获取必应壁纸，请检查网络后重试', 'error');
     return;
   }
   const engineValue = elements.customizeForm.elements.namedItem('searchEngine')?.value;
-  if (engineValue && engineValue !== state.searchEngine) await selectSearchEngine(engineValue);
+  const selectedPetals = [...elements.customizeForm.querySelectorAll('input[name="enginePetals"]:checked')]
+    .map((input) => input.value)
+    .filter((engineId) => SEARCH_ENGINES[engineId]);
+  if (engineValue && !selectedPetals.includes(engineValue)) selectedPetals.push(engineValue);
+  state.enginePetals = selectedPetals.length
+    ? SEARCH_ENGINE_ORDER.filter((engineId) => selectedPetals.includes(engineId))
+    : [engineValue || 'google'];
+  if (engineValue) await setDefaultSearchEngine(engineValue);
   elements.customizeDialog.close();
 });
 
@@ -2830,10 +3005,11 @@ elements.customizeForm.elements.namedItem('wallpaper')?.forEach?.((radio) => {
 
 elements.resetCustomization.addEventListener('click', async () => {
   state.customization = { theme: 'light', wallpaper: { mode: 'none', image: '' }, shortcutRows: 3 };
+  state.allowThirdPartyIcons = false;
   applyCustomization();
   renderShortcuts();
   populateCustomizationForm();
-  await storageSet({ customization: state.customization });
+  await storageSet({ customization: state.customization, allowThirdPartyIcons: false });
 });
 
 document.querySelectorAll('[data-close]').forEach((button) => {

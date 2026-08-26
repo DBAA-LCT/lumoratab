@@ -1,0 +1,43 @@
+name: 报告问题
+description: 报告可复现的错误或异常行为
+title: "[Bug] "
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 请说明实际发生了什么，以及你期望的结果。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开…
+        2. 点击…
+        3. 出现…
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: 浏览器
+      options:
+        - Google Chrome
+        - Microsoft Edge
+        - 其他 Chromium 浏览器
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: LumoraTab 版本
+      placeholder: 例如 0.4.5
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: 补充信息
+      description: 可添加截图、录屏或控制台错误；请勿提交密码等敏感信息。

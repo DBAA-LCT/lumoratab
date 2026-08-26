@@ -13,13 +13,13 @@
 
 - [x] Individual or company account enrolled in the Microsoft Edge program.
 - [x] Extension logo: square, recommended 300×300 PNG; minimum 128×128.
-- [ ] Full description: 250–10,000 characters.
-- [ ] At least 3 screenshots recommended; allowed sizes are 1280×800 or 640×480, maximum 6.
+- [x] Full description: 250–10,000 characters.
+- [x] Three clean 1280×800 screenshots prepared in `store/assets/`.
 - [ ] Optional small promotional tile: 440×280 PNG.
 - [ ] Optional large promotional tile: 1400×560 PNG.
-- [ ] Category: Productivity.
-- [ ] Privacy, permission, remote-code, and data-use declarations completed.
-- [ ] Certification notes pasted from `submission-notes.md`.
+- [x] Category: Productivity selected for submission.
+- [x] Privacy, permission, remote-code, and data-use declarations prepared.
+- [x] Certification notes prepared in `submission-notes.md`.
 - [ ] Visibility and markets selected.
 
 ## Chrome Web Store
@@ -46,10 +46,10 @@ Screenshots must not show personal bookmarks, browsing history, account names, e
 
 - Repository: https://github.com/DBAA-LCT/lumoratab
 - Support: https://github.com/DBAA-LCT/lumoratab/issues
-- Privacy policy: https://github.com/DBAA-LCT/lumoratab/blob/release/v0.4.0/store/privacy-policy.md
+- Privacy policy: https://github.com/DBAA-LCT/lumoratab/blob/main/store/privacy-policy.md
 
 ## Remaining decisions
 
 - Choose one logo direction and export final raster assets.
-- Decide whether to remove third-party favicon fallbacks before submission.
+- [x] Third-party favicon fallbacks are opt-in or manually triggered and documented in the privacy policy.
 - Decide whether online search suggestions should remain enabled by default or become opt-in.

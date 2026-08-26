@@ -9,7 +9,7 @@ import sys
 import tempfile
 from argparse import ArgumentParser
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parent
 DIST = ROOT / "dist"
@@ -17,8 +17,11 @@ SOURCE_FILES = (
     "manifest.json",
     "newtab.html",
     "newtab.css",
+    "newtab-core.js",
+    "newtab-platform.js",
     "newtab.js",
     "service-worker.js",
+    "ai-relay-core.js",
     "ai-relay.js",
 )
 ICON_FILES = (
@@ -42,6 +45,19 @@ TARGETS = {
     "edge": ("Microsoft Edge", "edge://extensions/"),
     "chrome": ("Google Chrome", "chrome://extensions/"),
 }
+FIXED_ZIP_TIMESTAMP = (2020, 1, 1, 0, 0, 0)
+FIXED_FILE_EPOCH = 1577836800
+
+
+def write_archive_bytes(package: ZipFile, filename: str, data: bytes) -> None:
+    info = ZipInfo(filename, FIXED_ZIP_TIMESTAMP)
+    info.compress_type = ZIP_DEFLATED
+    info.external_attr = 0o100644 << 16
+    package.writestr(info, data, compress_type=ZIP_DEFLATED, compresslevel=9)
+
+
+def write_archive_file(package: ZipFile, filename: str) -> None:
+    write_archive_bytes(package, filename, (ROOT / filename).read_bytes())
 
 
 def find_chromium() -> Path | None:
@@ -73,6 +89,7 @@ def build_crx(version: str, key: Path) -> Path:
             destination = extension_dir / filename
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / filename, destination)
+            os.utime(destination, (FIXED_FILE_EPOCH, FIXED_FILE_EPOCH))
 
         subprocess.run(
             [
@@ -128,14 +145,14 @@ LumoraTab 是一个 Manifest V3 新标签页扩展。
 """
         with ZipFile(archive, "w", compression=ZIP_DEFLATED, compresslevel=9) as package:
             for filename in PACKAGE_FILES:
-                package.write(ROOT / filename, filename)
-            package.writestr("INSTALL.txt", install.encode("utf-8-sig"))
+                write_archive_file(package, filename)
+            write_archive_bytes(package, "INSTALL.txt", install.encode("utf-8-sig"))
         artifacts.append(archive)
 
     store_archive = DIST / f"lumoratab-store-v{version}.zip"
     with ZipFile(store_archive, "w", compression=ZIP_DEFLATED, compresslevel=9) as package:
         for filename in PACKAGE_FILES:
-            package.write(ROOT / filename, filename)
+            write_archive_file(package, filename)
     artifacts.append(store_archive)
 
     if args.crx_key:
