@@ -191,7 +191,7 @@
           <label id="shortcut-icon-url-label" hidden>图片网址
             <input id="shortcut-icon-url" type="url" inputmode="url" placeholder="https://example.com/icon.svg">
           </label>
-          <p class="shortcut-icon-hint">手动获取、图片网址和本地上传只会成为候选；点击候选后才会使用。推荐 SVG、PNG 或 WebP。</p>
+          <p class="shortcut-icon-hint">手动获取会申请读取当前 HTTPS 网站的权限，从网页和站点清单查找图标；拒绝授权时仍可使用常见路径和第三方服务。获取后预选手动候选，保存才生效。推荐 SVG、PNG 或 WebP。</p>
           <p id="shortcut-icon-status" class="shortcut-icon-status" role="status" aria-live="polite"></p>
         </div>
       </fieldset>
@@ -362,6 +362,7 @@
 
   <script src="newtab-core.js"></script>
   <script src="newtab-platform.js"></script>
+  <script src="icon-discovery.js"></script>
   <script src="newtab.js"></script>
 </body>
 </html>

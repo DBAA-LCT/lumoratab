@@ -1,6 +1,6 @@
 # LumoraTab Privacy Policy / 微光新标签页隐私政策
 
-**Effective date / 生效日期：2026-08-24**
+**Effective date / 生效日期：2026-09-03**
 
 LumoraTab（微光新标签页）是一款替换浏览器新标签页的扩展。本政策说明扩展访问、保存和传输哪些数据。
 
@@ -20,6 +20,7 @@ LumoraTab 在用户打开收藏夹选择器时申请可选的收藏夹权限，�
 - 用户主动选择豆包或 DeepSeek 并按下回车时，扩展会在当前浏览器会话内短暂保存该问题；选择 DeepSeek 时还会保存用户选择的“深度思考”“联网搜索”开关。扩展随后打开所选 AI 网页、应用 DeepSeek 网页能够识别的开关、填入问题并尝试发送。任务仅在网页确认发送后从扩展会话存储中删除；未发送任务最多可在十分钟内被目标网页领取，且不会写入 LumoraTab 搜索历史。登录、发送及后续处理由对应 AI 网站负责。
 - 启用必应壁纸时，扩展会请求 Microsoft Bing 的壁纸列表和图片。
 - 自动获取快捷网站图标时，扩展默认只请求目标网站自身的常见图标路径并使用浏览器本地图标接口。只有用户在“更改图标”中点击“手动获取”，或在设置中明确启用“自动使用第三方图标服务”后，才可能把快捷网站的域名发送给 Clearbit、Google、Icon Horse 或 DuckDuckGo。
+- 点击“手动获取”时，扩展会按需申请当前 HTTPS 站点的可选读取权限，读取所填网址的公开 HTML 和同源图标清单，并加载其中声明的图标或品牌图片（可能托管于 CDN）。网页读取不携带 Cookie 或身份凭据、不执行目标网页脚本；不会遍历外部样式表、组件包或图标字体。拒绝授权或读取失败时仍可回退到原有图标来源。授权不会启用后台网页扫描，可在浏览器扩展设置中撤销。
 - 用户设置自定义图标网址时，浏览器会直接向该网址请求图片。
 
 这些第三方服务会按照各自的隐私政策处理请求。LumoraTab 不会在这些请求中主动附加浏览器 Cookie、身份凭据或开发者自定义的用户标识。
@@ -35,6 +36,7 @@ LumoraTab 在用户打开收藏夹选择器时申请可选的收藏夹权限，�
 ### 5. 权限用途
 
 - `bookmarks`（可选）：仅在用户打开收藏夹选择器时申请，供用户搜索浏览器收藏夹并添加快捷方式。
+- HTTPS 站点访问（可选）：仅在手动获取图标时申请所填网址的站点，不会默认授予所有网站访问权限。
 - `favicon`：读取浏览器保存的站点图标。
 - `storage`：在本地保存设置和内容。
 - `topSites`：首次使用时读取常用网站并生成快捷方式。
@@ -61,6 +63,7 @@ Some optional features communicate directly with third-party services:
 - When the user explicitly selects Doubao or DeepSeek and presses Enter, the question and the selected Deep Thinking and Web Search options are held briefly in browser-session memory while LumoraTab opens the selected AI website, applies options that the page exposes, fills the question, and attempts to send it. The task is removed only after the page confirms that it was sent; an unsent task remains claimable for up to ten minutes and is never added to LumoraTab search history. Authentication, delivery, and subsequent processing are handled by the selected AI website.
 - Bing wallpaper mode requests wallpaper metadata and images from Microsoft Bing.
 - Automatic shortcut icons request common icon paths from the target website and use the browser favicon API by default. A shortcut hostname may be sent to Clearbit, Google, Icon Horse, or DuckDuckGo only after the user opens “Change icon” and clicks “Manual fetch,” or explicitly enables automatic third-party icon services in settings.
+- Manual fetch requests optional access to the selected HTTPS site to read its public HTML and same-origin icon manifests, then loads declared icons or brand images, including CDN-hosted images. Page requests omit cookies and credentials and never execute the target page's scripts. External stylesheets, component packages and icon fonts are not crawled. Denied access or failed discovery falls back to existing icon sources. Granting access does not enable background page scanning; access can be revoked in the browser's extension settings.
 - A custom icon URL selected by the user is requested directly by the browser.
 
 Those services process requests under their own privacy policies. LumoraTab does not intentionally attach browser cookies, credentials, or a developer-defined user identifier to these requests.
@@ -76,6 +79,7 @@ Users can edit shortcuts, search history, and settings within the extension. Uni
 ### 5. Permission purposes
 
 - `bookmarks` (optional): requested only when the user opens the bookmark picker, then used to search bookmarks and create shortcuts.
+- HTTPS site access (optional): requested for the selected site's host only during manual icon discovery; access to all websites is not granted by default.
 - `favicon`: reads favicons already available to the browser.
 - `storage`: stores settings and user-created content locally.
 - `topSites`: creates initial shortcuts from frequently visited sites.

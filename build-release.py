@@ -19,6 +19,7 @@ SOURCE_FILES = (
     "newtab.css",
     "newtab-core.js",
     "newtab-platform.js",
+    "icon-discovery.js",
     "newtab.js",
     "service-worker.js",
     "ai-relay-core.js",

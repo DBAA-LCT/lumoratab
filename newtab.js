@@ -1,5 +1,6 @@
 const { calculatePetalPositions, looksLikeUrl, normalizeEnginePetals, normalizeUrl, selectBestIcon, shouldRequestSuggestions } = globalThis.LumoraCore;
-const { ensureOptionalPermission, hasExtensionApi, reportError, storageGet, storageSet } = globalThis.LumoraPlatform;
+const { ensureOptionalPermission, hasExtensionApi, reportError, requestIconSiteAccess, storageGet, storageSet } = globalThis.LumoraPlatform;
+const { discoverPageIcons } = globalThis.LumoraIconDiscovery;
 
 const SEARCH_ENGINES = {
   google: {
@@ -1168,7 +1169,7 @@ function probeIconSource(candidate) {
       }
       const vectorBonus = candidate.vector ? 2000 : 0;
       const firstPartyBonus = candidate.firstParty ? 80 : 0;
-      resolve({ ...candidate, width, height, score: vectorBonus + firstPartyBonus + Math.min(shortestSide, 1024) });
+      resolve({ ...candidate, width, height, score: (candidate.priority || 0) + vectorBonus + firstPartyBonus + Math.min(shortestSide, 1024) });
     };
     image.onerror = () => {
       clearTimeout(timer);
@@ -1208,8 +1209,16 @@ function getIconSourceCandidates(pageUrl, includeThirdParty = false) {
   return candidates;
 }
 
-async function discoverBestIconResult(pageUrl, includeThirdParty, preferStrongFirstParty) {
-  const candidates = getIconSourceCandidates(pageUrl, includeThirdParty);
+async function discoverBestIconResult(pageUrl, includeThirdParty, preferStrongFirstParty, readPage = false) {
+  if (readPage) {
+    const declared = await discoverPageIcons(pageUrl);
+    const results = await Promise.allSettled(declared.map(probeIconSource));
+    const best = selectBestIcon(results.filter((result) => result.status === 'fulfilled').map((result) => result.value), false);
+    if (best) return best;
+  }
+  // A browser-local result cannot be saved as a manual HTTPS icon.
+  const candidates = getIconSourceCandidates(pageUrl, includeThirdParty)
+    .filter((candidate) => preferStrongFirstParty || (!candidate.local && /^https:\/\//i.test(candidate.url)));
   const firstPartyResults = await Promise.allSettled(candidates.filter((candidate) => candidate.firstParty).map(probeIconSource));
   const firstPartyIcons = firstPartyResults
     .filter((result) => result.status === 'fulfilled')
@@ -1301,6 +1310,7 @@ function createShortcutIcon(shortcut, className = 'shortcut-icon') {
 
 let pendingIconFileData = '';
 let pendingManualIconUrl = '';
+let manualIconRequestToken = 0;
 let selectedIconCandidate = 'auto';
 
 const ICON_CANDIDATE_LABELS = {
@@ -1405,29 +1415,44 @@ function setShortcutIconChooserOpen(open) {
 }
 
 async function fetchShortcutIcon() {
+  const requestToken = ++manualIconRequestToken;
+  const isCurrent = () => requestToken === manualIconRequestToken && elements.shortcutDialog.open;
   const originalLabel = elements.shortcutFetchIcon.textContent;
   try {
     const pageUrl = normalizeUrl(elements.shortcutUrl.value);
+    const accessRequest = requestIconSiteAccess(pageUrl);
     elements.shortcutFetchIcon.disabled = true;
     elements.shortcutFetchIcon.textContent = '获取中…';
     elements.shortcutError.textContent = '';
     elements.shortcutIconStatus.dataset.state = '';
     elements.shortcutIconStatus.textContent = '正在从更多来源获取候选图标…';
-    const result = await discoverBestIconResult(pageUrl, true, false);
+    const readPage = await accessRequest;
+    if (!isCurrent()) return;
+    const result = await discoverBestIconResult(pageUrl, true, false, readPage);
+    if (!isCurrent()) return;
     if (!result || result.local || !/^https:\/\//i.test(result.url)) throw new Error('未找到不同于自动图标的可用候选');
     pendingManualIconUrl = result.url;
     selectedIconCandidate = 'manual';
     renderShortcutIconCandidates();
     renderShortcutIconPreview();
     elements.shortcutIconStatus.dataset.state = 'success';
-    elements.shortcutIconStatus.textContent = `已加入 ${getShortcutHost(pageUrl) || '该网站'} 的手动候选，并选中使用。`;
+    elements.shortcutIconStatus.textContent = `已加入 ${getShortcutHost(pageUrl) || '该网站'} 的${result.source || '手动'}候选，保存后生效。`;
   } catch (error) {
+    if (!isCurrent()) return;
     elements.shortcutIconStatus.dataset.state = 'error';
     elements.shortcutIconStatus.textContent = `获取失败：${error.message}`;
   } finally {
-    elements.shortcutFetchIcon.disabled = false;
-    elements.shortcutFetchIcon.textContent = originalLabel;
+    if (requestToken === manualIconRequestToken) {
+      elements.shortcutFetchIcon.disabled = false;
+      elements.shortcutFetchIcon.textContent = originalLabel;
+    }
   }
+}
+
+function resetManualIconRequest() {
+  manualIconRequestToken += 1;
+  elements.shortcutFetchIcon.disabled = false;
+  elements.shortcutFetchIcon.textContent = '手动获取';
 }
 
 function readIconFile(file) {
@@ -2472,6 +2497,7 @@ async function createNewShortcutGroup() {
 }
 
 function openShortcutDialog(destination = 'root', editIndex = -1) {
+  resetManualIconRequest();
   const search = document.querySelector('#bookmark-search');
   const destinationLabel = elements.shortcutDestination.closest('label');
   const item = Number.isInteger(editIndex) ? state.shortcuts[editIndex] : null;
@@ -2795,6 +2821,7 @@ elements.shortcutName.addEventListener('input', () => {
   renderShortcutIconPreview();
 });
 elements.shortcutUrl.addEventListener('input', () => {
+  resetManualIconRequest();
   elements.shortcutIconStatus.dataset.state = '';
   elements.shortcutIconStatus.textContent = '';
   pendingManualIconUrl = '';

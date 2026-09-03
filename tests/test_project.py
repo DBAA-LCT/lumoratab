@@ -2,9 +2,13 @@ import json
 import re
 import shutil
 import subprocess
+import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from html.parser import HTMLParser
 from pathlib import Path
+from zipfile import ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,6 +75,7 @@ class ProjectValidationTests(unittest.TestCase):
             "newtab.css",
             "newtab-core.js",
             "newtab-platform.js",
+            "icon-discovery.js",
             "newtab.js",
             "service-worker.js",
             "ai-relay-core.js",
@@ -86,7 +91,7 @@ class ProjectValidationTests(unittest.TestCase):
         node = shutil.which("node")
         if not node:
             self.skipTest("Node.js is not installed")
-        for filename in ("newtab-core.js", "newtab-platform.js", "newtab.js", "service-worker.js", "ai-relay-core.js", "ai-relay.js"):
+        for filename in ("newtab-core.js", "newtab-platform.js", "icon-discovery.js", "newtab.js", "service-worker.js", "ai-relay-core.js", "ai-relay.js"):
             result = subprocess.run(
                 [node, "--check", str(ROOT / filename)],
                 capture_output=True,
@@ -94,6 +99,31 @@ class ProjectValidationTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_icon_discovery_is_packaged_and_uses_optional_site_access(self):
+        self.assertEqual(self.manifest.get("optional_host_permissions"), ["https://*/*"])
+        self.assertNotIn("https://*/*", self.manifest["host_permissions"])
+        scripts = re.findall(r'<script src="([^"]+)"', self.html)
+        self.assertLess(scripts.index("icon-discovery.js"), scripts.index("newtab.js"))
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("build_release", ROOT / "build-release.py")
+        build = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(build)
+        self.assertIn("icon-discovery.js", build.PACKAGE_FILES)
+        # Build in a test-only directory; leave the user's release artifacts untouched.
+        with tempfile.TemporaryDirectory(prefix="lumoratab-package-test-") as folder:
+            build.DIST = Path(folder)
+            build.parse_args = lambda: type("Args", (), {"crx_key": None, "require_crx": False})()
+            with redirect_stdout(StringIO()):
+                build.main()
+                first = {path.name: path.read_bytes() for path in build.DIST.glob("*.zip")}
+                build.main()
+            self.assertEqual(len(first), 3)
+            for path in build.DIST.glob("*.zip"):
+                self.assertEqual(first[path.name], path.read_bytes())
+                with ZipFile(path) as archive:
+                    self.assertIsNone(archive.testzip())
+                    self.assertEqual(archive.read("icon-discovery.js"), (ROOT / "icon-discovery.js").read_bytes())
 
 
 if __name__ == "__main__":

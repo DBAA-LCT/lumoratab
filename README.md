@@ -84,6 +84,7 @@ Windows 和 macOS 上的 Chrome / Edge 通常不允许普通用户直接安装�
 - 可在设置中隐藏快捷方式，或选择最多显示 1、2、3 行；较小窗口仍会自动减少行数。
 - 支持读取浏览器收藏夹与 `topSites` 常用网站。
 - 自动探测网站自身的 SVG、Apple Touch Icon、高清 PNG 和浏览器 favicon；只有用户主动更改图标时，才展示自动结果并允许继续加入手动获取、图片网址和本地上传候选。手动结果不会覆盖自动缓存。已解析来源会缓存 30 天；满足跨域与大小条件的图片会直接保存为本地数据，其他图片继续使用浏览器 HTTP/favicon 缓存。
+- “手动获取”会按需申请当前 HTTPS 站点的读取权限，优先查找 HTML 声明的图标、同源 Web App Manifest 图标，以及带 logo/brand 标记的图片或内联 CSS 背景/遮罩图片；支持相对路径、CDN 地址和去重。不会执行目标网页脚本、遍历外部样式表或复制图标字体/SVG sprite。拒绝授权、读取失败或没有可用图片时仍回退到常见图标路径和第三方服务。候选需保存后才应用于快捷方式。
 
 ### 外观与壁纸
 
@@ -97,6 +98,7 @@ Windows 和 macOS 上的 Chrome / Edge 通常不允许普通用户直接安装�
 | 权限 | 用途 |
 | --- | --- |
 | `bookmarks`（可选） | 仅在用户打开收藏夹选择器时申请，用于搜索收藏夹并添加快捷方式 |
+| HTTPS 站点访问（可选） | 仅点击“手动获取”时申请当前站点，用于读取网页和同源图标清单，可在浏览器扩展设置中撤销 |
 | `favicon` | 显示浏览器保存的网站图标 |
 | `storage` / `unlimitedStorage` | 保存设置、快捷方式和自定义壁纸 |
 | `topSites` | 读取浏览器常用网站供用户选择 |
@@ -115,6 +117,8 @@ cd lumoratab
 ```
 
 然后在扩展管理页开启开发者模式，选择“加载已解压的扩展程序”，并加载仓库根目录。修改 HTML、CSS 或 JavaScript 后，在扩展管理页点击“重新加载”。
+
+运行回归测试：`node --test tests/core.test.js` 和 `python -m unittest discover -s tests -p "test_*.py" -v`。真实 DOM 图标解析测试可通过 `python -m http.server 8765 --bind 127.0.0.1` 启动本地服务后打开 `http://127.0.0.1:8765/tests/icon-discovery.browser.html` 查看。
 
 仓库以 `main` 作为唯一长期开发分支。日常开发提交到 `main`，发布时从 `main` 创建与 `manifest.json` 版本一致的 `v*` 标签，不再维护长期 `release/*` 分支。
 

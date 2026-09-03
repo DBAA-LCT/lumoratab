@@ -35,9 +35,13 @@ Allows users to save locally selected wallpaper images and icon files without fa
 
 Requests are initiated only to provide the corresponding user-facing feature.
 
+### Optional HTTPS site access
+
+`https://*/*` is declared as optional, not granted at installation. Clicking “Manual fetch” in the shortcut icon editor requests access to the exact HTTPS hostname entered by the user. This reads public HTML and same-origin Web App Manifest files to locate declared icons and brand images. Requests omit credentials and referrers; remote scripts are never executed. Access denial or discovery failure falls back to existing icon sources. No background webpage scanning is enabled by the grant.
+
 ## Remote code declaration
 
-**No.** LumoraTab does not download or execute remote JavaScript or WebAssembly. Remote responses are suggestion JSON, wallpaper metadata/images, and image resources only.
+**No.** LumoraTab does not download or execute remote JavaScript or WebAssembly. Remote responses include suggestion JSON, wallpaper metadata/images, image resources, and—only for user-triggered icon discovery—public HTML and icon manifests parsed as inert data.
 
 ## Data-use declaration
 
@@ -60,6 +64,8 @@ Requests are initiated only to provide the corresponding user-facing feature.
 8. Select Bing wallpaper mode, switch wallpaper, and test rotation options.
 9. Select a local image as a custom wallpaper.
 10. Close and reopen the new tab to confirm settings persist locally.
+11. Edit a shortcut, expand “Change icon,” and click “Manual fetch.” Grant access to that site and confirm a candidate is found from its declared icons or existing fallback sources. Save to apply it.
+12. Repeat with site access denied and verify fallback still works. Change the shortcut URL during a pending fetch and verify an old result does not overwrite the new shortcut's icon.
 
 No login, paid account, test credential, native application, or external hardware is required.
 
